@@ -1,0 +1,54 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]: 🏸
+        - generic [ref=e7]:
+          - generic [ref=e8]: saturday league
+          - generic [ref=e9]: CourtPals
+      - generic [ref=e80]: Sat, Apr 18
+    - generic [ref=e308]:
+      - generic [ref=e309]:
+        - generic [ref=e310]:
+          - generic [ref=e311]: live
+          - generic [ref=e312]: first to 21
+        - generic [ref=e313]: 00:01
+      - generic [ref=e314]:
+        - button "🏸 Team 1 0 tap to score" [ref=e315]:
+          - generic [ref=e316]:
+            - generic [ref=e317]: 🏸
+            - generic [ref=e318]: Team 1
+          - generic [ref=e319]: "0"
+          - generic [ref=e320]: tap to score
+        - button "🏸 Team 2 0 tap to score" [ref=e321]:
+          - generic [ref=e322]:
+            - generic [ref=e323]: 🏸
+            - generic [ref=e324]: Team 2
+          - generic [ref=e325]: "0"
+          - generic [ref=e326]: tap to score
+      - generic [ref=e327]:
+        - button "↩ Undo" [disabled] [ref=e328]:
+          - generic [ref=e329]: ↩
+          - text: Undo
+        - button "✕ Abandon" [ref=e330]:
+          - generic [ref=e331]: ✕
+          - text: Abandon
+    - navigation [ref=e52]:
+      - list [ref=e54]:
+        - listitem [ref=e55]:
+          - button "🏆 League" [ref=e56] [cursor=pointer]:
+            - generic [ref=e57]: 🏆
+            - generic [ref=e58]: League
+        - listitem [ref=e59]:
+          - button "👥 Roster" [ref=e60] [cursor=pointer]:
+            - generic [ref=e61]: 👥
+            - generic [ref=e62]: Roster
+        - listitem [ref=e63]:
+          - button "🏸 Score" [ref=e64] [cursor=pointer]:
+            - generic [ref=e65]: 🏸
+            - generic [ref=e66]: Score
+        - listitem [ref=e67]:
+          - button "🗓️ History" [ref=e68] [cursor=pointer]:
+            - generic [ref=e69]: 🗓️
+            - generic [ref=e70]: History
+  - alert [ref=e81]
