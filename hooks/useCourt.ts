@@ -74,6 +74,10 @@ export function useCourt(user: User | null) {
       })
       return
     }
+    // A new user means a fresh profile fetch — reset to loading so the gate
+    // doesn't briefly see the previous user-less (profile:null) state and
+    // flash the court-bootstrap dialog while the snapshot is in flight.
+    setState(s => ({ ...s, loading: true, profile: null, court: null, isAdmin: false }))
     const userRef = doc(db, 'users', user.uid)
     const unsub = onSnapshot(
       userRef,
