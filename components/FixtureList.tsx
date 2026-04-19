@@ -1,6 +1,5 @@
 'use client'
 
-import type { CSSProperties } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -16,7 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { RotateCcw, Trophy, Radio } from 'lucide-react'
+import { RotateCcw, Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { rankStandings } from '@/hooks/useSession'
 import type { Fixture, Round, SessionPlayer, SessionTeam } from '@/types'
@@ -32,14 +31,14 @@ const TEAM_COLORS = [
 
 const ROUND_ORDER: Round[] = ['rr', 'semi', '3rd', 'final']
 
-const ROUND_LABELS: Record<Round, { eyebrow: string; title: string }> = {
-  rr: { eyebrow: 'group stage', title: 'Round robin' },
-  semi: { eyebrow: 'knockout', title: 'Semi-finals' },
-  final: { eyebrow: 'the decider', title: 'Final' },
-  '3rd': { eyebrow: 'bronze match', title: '3rd-place' },
+const ROUND_LABELS: Record<Round, { eyebrow: string; title: string; mono: string }> = {
+  rr: { eyebrow: 'group stage', title: 'Round robin', mono: 'RR' },
+  semi: { eyebrow: 'knockout', title: 'Semi-finals', mono: 'SF' },
+  final: { eyebrow: 'the decider', title: 'Final', mono: 'F' },
+  '3rd': { eyebrow: 'bronze match', title: '3rd-place', mono: '3RD' },
 }
 
-function roundChip(round: Round, indexInRound: number): string {
+function roundNumber(round: Round, indexInRound: number): string {
   switch (round) {
     case 'rr':
       return (indexInRound + 1).toString().padStart(2, '0')
@@ -94,33 +93,28 @@ export default function FixtureList({
 
   return (
     <div className="flex flex-col gap-6 px-4 pt-6 pb-8">
-      {/* ── BROADCAST HEADER ──────────────────────────────────────── */}
-      <header className="relative flex flex-col gap-3">
+      {/* ── HEADER ────────────────────────────────────────────── */}
+      <header className="flex flex-col gap-2.5">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.32em] text-primary/80">
-              {hasPlayoffs ? '// today\u2019s broadcast' : '// group stage'}
+            <p className="font-mono text-[9px] font-bold uppercase tracking-[0.32em] text-muted-foreground">
+              {hasPlayoffs ? 'today / schedule' : 'group stage'}
             </p>
-            <h1 className="font-display text-4xl font-extrabold leading-[0.9] tracking-tight">
+            <h1 className="font-display text-3xl font-extrabold leading-none tracking-tight">
               Fixtures
             </h1>
           </div>
-          <div className="flex flex-col items-end">
-            <span className="font-mono text-[9px] font-bold uppercase tracking-[0.28em] text-muted-foreground">
-              played
-            </span>
-            <span className="font-score text-3xl font-extrabold leading-none tabular text-primary">
+          <div className="flex items-baseline gap-1 font-score tabular">
+            <span className="text-2xl font-extrabold text-foreground">
               {done.toString().padStart(2, '0')}
-              <span className="text-xl text-muted-foreground">/{total.toString().padStart(2, '0')}</span>
+            </span>
+            <span className="text-lg font-bold text-muted-foreground/60">/</span>
+            <span className="text-lg font-bold text-muted-foreground">
+              {total.toString().padStart(2, '0')}
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Progress value={progressPct} className="h-0.5 flex-1" />
-          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.3em] text-muted-foreground tabular">
-            {Math.round(progressPct).toString().padStart(2, '0')}%
-          </span>
-        </div>
+        <Progress value={progressPct} className="h-[2px]" />
       </header>
 
       {grouped.map((group, gi) => {
@@ -129,20 +123,20 @@ export default function FixtureList({
         const isPlayoff = group.round !== 'rr'
 
         return (
-          <section key={group.round} className="flex flex-col gap-3">
-            <div className="flex items-end justify-between border-b border-border/40 pb-1.5">
-              <div className="flex items-baseline gap-3">
+          <section key={group.round} className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between border-b border-border/30 pb-1.5">
+              <div className="flex items-baseline gap-2.5">
                 <span
                   className={cn(
-                    'font-mono text-[9px] font-bold uppercase tracking-[0.3em]',
+                    'font-mono text-[9px] font-bold uppercase tracking-[0.32em]',
                     isPlayoff ? 'text-primary' : 'text-muted-foreground',
                   )}
                 >
-                  {label.eyebrow}
+                  [{label.mono}]
                 </span>
                 <h2
                   className={cn(
-                    'font-display text-xl font-extrabold leading-none tracking-tight',
+                    'font-display text-base font-extrabold uppercase leading-none tracking-[0.08em]',
                     isPlayoff && 'text-primary',
                   )}
                 >
@@ -151,21 +145,20 @@ export default function FixtureList({
               </div>
               <span className="font-mono text-[10px] font-bold tabular text-muted-foreground">
                 {groupDone.toString().padStart(2, '0')}
-                <span className="text-muted-foreground/50">/{group.list.length.toString().padStart(2, '0')}</span>
+                <span className="text-muted-foreground/40">/{group.list.length.toString().padStart(2, '0')}</span>
               </span>
             </div>
 
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col">
               {group.list.map((f, i) => (
-                <MatchCard
+                <MatchRow
                   key={f.id}
                   fixture={f}
                   index={i}
                   teams={teams}
                   rankMap={rankMap}
                   anyRRDone={anyRRDone}
-                  code={roundChip(group.round, i)}
-                  round={group.round}
+                  code={roundNumber(group.round, i)}
                   isPlayoff={isPlayoff}
                   canEdit={canEdit}
                   myTeamId={myTeamId}
@@ -182,16 +175,15 @@ export default function FixtureList({
   )
 }
 
-// ─── Match card ──────────────────────────────────────────────────────────────
+// ─── Match row (scoreboard panel) ────────────────────────────────────────────
 
-function MatchCard({
+function MatchRow({
   fixture: f,
   index,
   teams,
   rankMap,
   anyRRDone,
   code,
-  round,
   isPlayoff,
   canEdit,
   myTeamId,
@@ -205,7 +197,6 @@ function MatchCard({
   rankMap: Map<string, number>
   anyRRDone: boolean
   code: string
-  round: Round
   isPlayoff: boolean
   canEdit: boolean
   myTeamId: string | null
@@ -226,70 +217,29 @@ function MatchCard({
   const isWinnerB = isDone && f.winnerId === f.teamBId
   const mine = Boolean(myTeamId && (f.teamAId === myTeamId || f.teamBId === myTeamId))
 
-  const cardStyle: CSSProperties = {
-    animationDelay: `${animationDelay}ms`,
-    backgroundImage: [
-      `radial-gradient(120% 140% at 0% 50%, color-mix(in srgb, ${colorA} 28%, transparent) 0%, transparent 55%)`,
-      `radial-gradient(120% 140% at 100% 50%, color-mix(in srgb, ${colorB} 28%, transparent) 0%, transparent 55%)`,
-      'repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(255,255,255,0.012) 3px, rgba(255,255,255,0.012) 4px)',
-      'linear-gradient(180deg, rgba(5,13,28,0.85) 0%, rgba(5,13,28,0.95) 100%)',
-    ].join(', '),
-  }
-
   return (
     <Card
       onClick={() => canStart && onStart(f.id)}
       role={canStart ? 'button' : undefined}
       aria-disabled={!canStart}
-      style={cardStyle}
+      style={{ animationDelay: `${animationDelay}ms` }}
       className={cn(
-        'group animate-rise relative gap-0 overflow-hidden border border-border/30 py-0 transition-all',
-        canStart && 'cursor-pointer hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_-8px_rgba(199,242,56,0.2)]',
-        isActive && 'border-destructive/80 shadow-[0_0_0_1px_rgba(239,68,68,0.4),0_0_40px_-4px_rgba(239,68,68,0.5)]',
-        !canStart && !isActive && 'opacity-95',
-        isPlayoff && !isActive && 'border-primary/30',
+        'animate-rise relative -mb-px overflow-hidden rounded-none border border-border/30 bg-card py-0 transition-colors',
+        'first:rounded-t-md last:rounded-b-md last:mb-0',
+        canStart && 'cursor-pointer hover:bg-background hover:z-10 hover:border-primary/50',
+        isActive && 'z-10 border-destructive/80 bg-destructive/[0.04]',
+        mine && !isActive && 'bg-primary/[0.04]',
       )}
     >
-      {/* Left team light pillar */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 left-0 w-[3px]"
-        style={{
-          background: colorA,
-          boxShadow: `0 0 18px ${colorA}, 0 0 6px ${colorA}`,
-        }}
-      />
-      {/* Right team light pillar */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 w-[3px]"
-        style={{
-          background: colorB,
-          boxShadow: `0 0 18px ${colorB}, 0 0 6px ${colorB}`,
-        }}
-      />
+      {/* Team colour flags at the extreme edges (not full pillars) */}
+      <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-1" style={{ background: colorA }} />
+      <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-1" style={{ background: colorB }} />
 
-      {/* Status crest — top-right chevron */}
-      <StatusCrest isActive={isActive} isDone={isDone} mine={mine} />
-
-      <CardContent className="relative flex items-stretch gap-0 p-0">
-        {/* Match code block — chevron clipped */}
-        <div
-          className={cn(
-            'flex w-14 shrink-0 flex-col items-center justify-center border-r border-border/30 bg-background/40 px-2 py-3',
-            isPlayoff && 'border-primary/30 bg-primary/5',
-          )}
-          style={{
-            clipPath: 'polygon(0 0, 100% 0, 100% 82%, 85% 100%, 0 100%)',
-          }}
-        >
-          <span
-            className={cn(
-              'font-mono text-[8px] font-bold uppercase tracking-[0.28em]',
-              isPlayoff ? 'text-primary/80' : 'text-muted-foreground',
-            )}
-          >
-            {round === 'rr' ? 'MATCH' : round === 'semi' ? 'SEMI' : round === 'final' ? 'FINAL' : '3RD'}
+      <CardContent className="relative grid grid-cols-[56px_1fr_auto_1fr_auto] items-center gap-3 p-3 pl-4 pr-4">
+        {/* Match code */}
+        <div className="flex flex-col items-start gap-0.5 border-r border-border/30 pr-3">
+          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.22em] text-muted-foreground/70">
+            match
           </span>
           <span
             className={cn(
@@ -301,50 +251,48 @@ function MatchCard({
           </span>
         </div>
 
-        {/* Teams + scoreline */}
-        <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3">
-          <TeamColumn
-            team={tA}
-            players={tA.players}
-            color={colorA}
-            align="left"
-            rank={anyRRDone ? rankMap.get(f.teamAId) ?? null : null}
-            winner={isWinnerA}
-            loser={isDone && !isWinnerA}
-            score={isDone ? f.scoreA : null}
-            isActive={isActive}
-            mine={mine && f.teamAId === myTeamId}
-          />
+        <TeamCell
+          team={tA}
+          players={tA.players}
+          color={colorA}
+          align="left"
+          rank={anyRRDone ? rankMap.get(f.teamAId) ?? null : null}
+          winner={isWinnerA}
+          loser={isDone && !isWinnerA}
+          isMine={mine && f.teamAId === myTeamId}
+        />
 
-          <MatchBadge
-            isActive={isActive}
-            isDone={isDone}
-            canEdit={canEdit}
-            onReset={onReset && isDone ? () => onReset(f.id) : undefined}
-            round={round}
-          />
+        <Scoreline
+          scoreA={isDone ? f.scoreA : null}
+          scoreB={isDone ? f.scoreB : null}
+          winnerSide={isWinnerA ? 'A' : isWinnerB ? 'B' : null}
+          isActive={isActive}
+          isDone={isDone}
+          canEdit={canEdit}
+          onReset={onReset ? () => onReset(f.id) : undefined}
+          round={f.round}
+        />
 
-          <TeamColumn
-            team={tB}
-            players={tB.players}
-            color={colorB}
-            align="right"
-            rank={anyRRDone ? rankMap.get(f.teamBId) ?? null : null}
-            winner={isWinnerB}
-            loser={isDone && !isWinnerB}
-            score={isDone ? f.scoreB : null}
-            isActive={isActive}
-            mine={mine && f.teamBId === myTeamId}
-          />
-        </div>
+        <TeamCell
+          team={tB}
+          players={tB.players}
+          color={colorB}
+          align="right"
+          rank={anyRRDone ? rankMap.get(f.teamBId) ?? null : null}
+          winner={isWinnerB}
+          loser={isDone && !isWinnerB}
+          isMine={mine && f.teamBId === myTeamId}
+        />
+
+        <StatusPill isActive={isActive} isDone={isDone} mine={mine} canStart={canStart} />
       </CardContent>
     </Card>
   )
 }
 
-// ─── Team column ─────────────────────────────────────────────────────────────
+// ─── Team cell ───────────────────────────────────────────────────────────────
 
-function TeamColumn({
+function TeamCell({
   team,
   players,
   color,
@@ -352,9 +300,7 @@ function TeamColumn({
   rank,
   winner,
   loser,
-  score,
-  isActive,
-  mine,
+  isMine,
 }: {
   team: SessionTeam
   players: SessionPlayer[]
@@ -363,31 +309,29 @@ function TeamColumn({
   rank: number | null
   winner: boolean
   loser: boolean
-  score: number | null
-  isActive: boolean
-  mine: boolean
+  isMine: boolean
 }) {
   return (
     <div
       className={cn(
-        'flex min-w-0 flex-col gap-1.5',
+        'flex min-w-0 flex-col gap-1',
         align === 'right' && 'items-end text-right',
         loser && 'opacity-55',
       )}
     >
       <div
         className={cn(
-          'flex items-baseline gap-2',
+          'flex items-baseline gap-1.5',
           align === 'right' && 'flex-row-reverse',
         )}
       >
         {rank !== null && (
           <span
             className={cn(
-              'font-mono inline-flex size-5 items-center justify-center rounded-sm border text-[10px] font-extrabold tabular',
+              'font-mono inline-flex h-[14px] min-w-[14px] items-center justify-center border px-0.5 text-[9px] font-extrabold tabular leading-none',
               rank === 1
-                ? 'border-primary/60 bg-primary/15 text-primary'
-                : 'border-border/60 bg-background/60 text-muted-foreground',
+                ? 'border-primary/50 bg-primary/10 text-primary'
+                : 'border-border/50 text-muted-foreground',
             )}
           >
             {rank}
@@ -396,22 +340,18 @@ function TeamColumn({
         <h3
           className={cn(
             'font-display truncate text-base font-extrabold leading-none tracking-tight',
-            winner && 'text-primary',
+            winner && 'text-foreground',
           )}
-          style={winner ? { textShadow: `0 0 24px color-mix(in srgb, ${color} 60%, transparent)` } : undefined}
         >
           {team.name}
         </h3>
-        {winner && <Trophy className="size-3.5 shrink-0 text-primary" />}
-        {mine && (
-          <span
-            className="rounded-sm border border-primary/50 bg-primary/20 px-1 py-px font-mono text-[8px] font-extrabold uppercase tracking-[0.22em] text-primary"
-          >
+        {winner && <Trophy className="size-3 shrink-0 text-primary" />}
+        {isMine && (
+          <span className="rounded-sm bg-primary/20 px-1 py-px font-mono text-[8px] font-extrabold uppercase tracking-[0.22em] text-primary">
             you
           </span>
         )}
       </div>
-
       <div
         className={cn(
           'flex flex-wrap items-center gap-1',
@@ -419,207 +359,196 @@ function TeamColumn({
         )}
       >
         {players.map(p => (
-          <PlayerAvatarChip key={p.id} player={p} color={color} />
+          <PlayerPill key={p.id} player={p} color={color} />
         ))}
       </div>
-
-      {score !== null && (
-        <div
-          className={cn(
-            'flex items-baseline gap-1.5',
-            align === 'right' && 'flex-row-reverse',
-          )}
-        >
-          <span
-            className={cn(
-              'font-score text-3xl font-extrabold leading-none tabular',
-              winner ? 'text-primary' : 'text-muted-foreground',
-            )}
-            style={
-              winner
-                ? { textShadow: `0 0 32px color-mix(in srgb, ${color} 70%, transparent), 0 0 4px ${color}` }
-                : undefined
-            }
-          >
-            {score}
-          </span>
-          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
-            pts
-          </span>
-        </div>
-      )}
-
-      {isActive && score === null && (
-        <span className="font-mono text-[9px] font-bold uppercase tracking-[0.24em] text-destructive">
-          ◉ scoring in progress
-        </span>
-      )}
     </div>
   )
 }
 
-// ─── Center divider ──────────────────────────────────────────────────────────
+// ─── Center scoreline ────────────────────────────────────────────────────────
 
-function MatchBadge({
+function Scoreline({
+  scoreA,
+  scoreB,
+  winnerSide,
   isActive,
   isDone,
   canEdit,
   onReset,
   round,
 }: {
+  scoreA: number | null
+  scoreB: number | null
+  winnerSide: 'A' | 'B' | null
   isActive: boolean
   isDone: boolean
   canEdit: boolean
   onReset?: () => void
   round: Round
 }) {
-  return (
-    <div className="flex shrink-0 flex-col items-center gap-1 px-1">
-      {isActive ? (
-        <div className="flex flex-col items-center gap-0.5">
-          <span className="relative flex size-2">
-            <span className="absolute inline-flex size-2 animate-ping rounded-full bg-destructive opacity-75" />
-            <span className="relative inline-flex size-2 rounded-full bg-destructive" />
-          </span>
-          <span className="font-mono text-[10px] font-extrabold uppercase tracking-[0.28em] text-destructive">
-            LIVE
-          </span>
-        </div>
-      ) : isDone ? (
-        <div className="flex items-center gap-1">
-          <Badge
-            variant="outline"
-            className="gap-1 border-chart-2/40 bg-chart-2/10 font-mono text-[9px] font-bold uppercase tracking-[0.24em] text-chart-2"
-          >
-            final
-          </Badge>
-          {onReset && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Reset this match"
-                  onClick={e => e.stopPropagation()}
-                  className="size-5 text-muted-foreground hover:text-destructive"
-                >
-                  <RotateCcw className="size-3" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="font-display">Reset this match?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {round === 'rr'
-                      ? 'The score and winner will be cleared. Any playoff fixtures that depend on the RR standings will be discarded so you can re-seed.'
-                      : round === 'semi'
-                      ? 'The semi\u2019s result will be cleared. The Final and 3rd-place match (if generated) will be removed.'
-                      : 'The match will be cleared and the session returns to playoffs so you can replay it.'}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={onReset}>Reset match</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </div>
-      ) : (
-        <span className="font-mono text-[10px] font-extrabold uppercase tracking-[0.26em] text-muted-foreground/60">
-          VS
+  if (isActive) {
+    return (
+      <div className="flex min-w-[80px] flex-col items-center gap-0.5 rounded-sm border border-destructive/40 bg-destructive/10 px-2 py-1">
+        <span className="relative flex size-1.5">
+          <span className="absolute inline-flex size-1.5 animate-ping rounded-full bg-destructive opacity-75" />
+          <span className="relative inline-flex size-1.5 rounded-full bg-destructive" />
         </span>
-      )}
-    </div>
+        <span className="font-mono text-[9px] font-extrabold uppercase tracking-[0.28em] text-destructive">
+          LIVE
+        </span>
+      </div>
+    )
+  }
+
+  if (isDone && scoreA !== null && scoreB !== null) {
+    return (
+      <div className="flex items-center gap-1 rounded-sm border border-border/50 bg-background/60 px-3 py-1">
+        <span
+          className={cn(
+            'font-score text-2xl font-extrabold leading-none tabular',
+            winnerSide === 'A' ? 'text-foreground' : 'text-muted-foreground/60',
+          )}
+        >
+          {scoreA}
+        </span>
+        <span className="font-score text-sm font-bold text-muted-foreground/40">:</span>
+        <span
+          className={cn(
+            'font-score text-2xl font-extrabold leading-none tabular',
+            winnerSide === 'B' ? 'text-foreground' : 'text-muted-foreground/60',
+          )}
+        >
+          {scoreB}
+        </span>
+        {onReset && canEdit && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Reset this match"
+                onClick={e => e.stopPropagation()}
+                className="ml-1 size-5 text-muted-foreground hover:text-destructive"
+              >
+                <RotateCcw className="size-3" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-display">Reset this match?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {round === 'rr'
+                    ? 'The score and winner will be cleared. Any playoff fixtures that depend on the RR standings will be discarded so you can re-seed.'
+                    : round === 'semi'
+                    ? 'The semi\u2019s result will be cleared. The Final and 3rd-place match (if generated) will be removed.'
+                    : 'The match will be cleared and the session returns to playoffs so you can replay it.'}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onReset}>Reset match</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <span className="font-mono text-[10px] font-extrabold uppercase tracking-[0.3em] text-muted-foreground/50">
+      vs
+    </span>
   )
 }
 
-// ─── Status crest (top-right chevron) ───────────────────────────────────────
+// ─── Right-edge status pill ──────────────────────────────────────────────────
 
-function StatusCrest({
+function StatusPill({
   isActive,
   isDone,
   mine,
+  canStart,
 }: {
   isActive: boolean
   isDone: boolean
   mine: boolean
+  canStart: boolean
 }) {
   if (isActive) {
     return (
-      <div
-        aria-hidden
-        className="pointer-events-none absolute right-0 top-0 flex h-5 w-16 items-center justify-center bg-destructive"
-        style={{ clipPath: 'polygon(12% 0, 100% 0, 100% 100%, 0 100%)' }}
-      >
-        <span className="flex items-center gap-1 font-mono text-[8px] font-extrabold uppercase tracking-[0.28em] text-destructive-foreground">
-          <Radio className="size-2.5" />
-          on air
-        </span>
-      </div>
+      <Badge className="justify-self-end h-5 gap-1 rounded-sm bg-destructive text-destructive-foreground hover:bg-destructive px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em]">
+        ON AIR
+      </Badge>
     )
   }
   if (isDone) {
     return (
-      <div
-        aria-hidden
-        className="pointer-events-none absolute right-0 top-0 flex h-5 w-14 items-center justify-center bg-chart-2/80"
-        style={{ clipPath: 'polygon(12% 0, 100% 0, 100% 100%, 0 100%)' }}
+      <Badge
+        variant="outline"
+        className="justify-self-end h-5 gap-1 rounded-sm border-chart-2/40 bg-chart-2/10 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-chart-2"
       >
-        <span className="font-mono text-[8px] font-extrabold uppercase tracking-[0.28em] text-background">
-          result
-        </span>
-      </div>
+        FINAL
+      </Badge>
+    )
+  }
+  if (canStart) {
+    return (
+      <Badge
+        variant="outline"
+        className="justify-self-end h-5 gap-1 rounded-sm border-primary/40 bg-primary/5 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-primary"
+      >
+        TAP
+      </Badge>
     )
   }
   if (mine) {
     return (
-      <div
-        aria-hidden
-        className="pointer-events-none absolute right-0 top-0 flex h-5 w-14 items-center justify-center bg-primary"
-        style={{ clipPath: 'polygon(12% 0, 100% 0, 100% 100%, 0 100%)' }}
+      <Badge
+        variant="outline"
+        className="justify-self-end h-5 gap-1 rounded-sm border-primary/30 bg-primary/5 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-primary"
       >
-        <span className="font-mono text-[8px] font-extrabold uppercase tracking-[0.28em] text-primary-foreground">
-          you
-        </span>
-      </div>
+        YOU
+      </Badge>
     )
   }
-  return null
+  return (
+    <Badge
+      variant="outline"
+      className="justify-self-end h-5 gap-1 rounded-sm border-border/40 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-muted-foreground/60"
+    >
+      QUEUED
+    </Badge>
+  )
 }
 
-// ─── Player avatar chip ──────────────────────────────────────────────────────
+// ─── Player pill ─────────────────────────────────────────────────────────────
 
-function PlayerAvatarChip({ player, color }: { player: SessionPlayer; color: string }) {
+function PlayerPill({ player, color }: { player: SessionPlayer; color: string }) {
   return (
     <span
-      className="group/chip inline-flex items-center gap-1.5 rounded-sm border bg-background/80 pl-0.5 pr-1.5 py-0.5 backdrop-blur-sm transition-colors hover:bg-background"
-      style={{
-        borderColor: `color-mix(in srgb, ${color} 55%, transparent)`,
-        boxShadow: `inset 2px 0 0 0 ${color}`,
-      }}
+      className="inline-flex items-center gap-1 rounded-sm border border-border/40 bg-background/70 pl-0.5 pr-1.5 py-0.5"
+      style={{ boxShadow: `inset 2px 0 0 0 ${color}` }}
     >
       {player.photoURL ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={player.photoURL}
           alt=""
-          className="size-4 rounded-full ring-1 ring-border/40"
+          className="size-4 rounded-full"
           referrerPolicy="no-referrer"
         />
       ) : (
         <span
           aria-hidden
           className="flex size-4 items-center justify-center rounded-full text-[10px] leading-none"
-          style={{
-            background: `color-mix(in srgb, ${color} 35%, transparent)`,
-            boxShadow: `inset 0 0 0 1px ${color}`,
-          }}
+          style={{ background: `color-mix(in srgb, ${color} 20%, transparent)` }}
         >
           {player.emoji}
         </span>
       )}
-      <span className="font-mono max-w-20 truncate text-[10px] font-bold uppercase tracking-[0.06em]">
+      <span className="font-mono max-w-20 truncate text-[9px] font-extrabold uppercase tracking-[0.08em]">
         {player.name}
       </span>
     </span>
