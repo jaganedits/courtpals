@@ -24,6 +24,7 @@ service cloud.firestore {
 
     function isMember(courtId) {
       return isSignedIn()
+        && exists(/databases/$(database)/documents/courts/$(courtId))
         && request.auth.uid in
            get(/databases/$(database)/documents/courts/$(courtId)).data.members;
     }
@@ -59,19 +60,17 @@ service cloud.firestore {
         && request.auth.uid in request.resource.data.members;
 
       // Updates:
-      //   (a) The creator can edit name / inviteCode / members freely.
+      //   (a) The creator can edit anything.
       //   (b) Any signed-in user can add ONLY their own uid to members
-      //       (the join-with-invite flow). They can't change anything else
-      //       and can't add themselves a second time.
+      //       (the join-with-invite flow). The diff() check enforces that
+      //       no other field changes on the court doc.
       allow update: if isSignedIn() && (
         resource.data.createdBy == request.auth.uid
         || (
-          request.resource.data.createdBy == resource.data.createdBy
-          && request.resource.data.inviteCode == resource.data.inviteCode
-          && request.resource.data.name == resource.data.name
-          && request.resource.data.members.size() == resource.data.members.size() + 1
+          !(request.auth.uid in resource.data.members)
           && request.auth.uid in request.resource.data.members
-          && !(request.auth.uid in resource.data.members)
+          && request.resource.data.diff(resource.data)
+               .affectedKeys().hasOnly(['members'])
         )
       );
 
