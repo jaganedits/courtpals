@@ -504,15 +504,14 @@ export function useSession(opts: UseSessionOptions = {}) {
   // Mirror local state to Firestore on every change. The host of the
   // tournament (state.createdBy === uid) always writes; court admins also
   // have write privileges regardless of who started the tournament.
-  const lastIdRef = useRef<string>(state.id)
+  // Track whether the remote doc currently represents a live tournament so we
+  // know when to deleteDoc vs setDoc.
+  const hadRemoteTournamentRef = useRef(false)
   useEffect(() => {
     if (!courtId || !uid) return
-    // Skip the write that would immediately follow a remote hydration —
-    // otherwise we'd echo the snapshot we just received back to Firestore
-    // and loop forever.
     if (skipNextWriteRef.current) {
       skipNextWriteRef.current = false
-      lastIdRef.current = state.id
+      hadRemoteTournamentRef.current = Boolean(state.createdBy)
       return
     }
     const db = firestore()
@@ -520,22 +519,22 @@ export function useSession(opts: UseSessionOptions = {}) {
     const ref = doc(db, 'courts', courtId, 'tournaments', 'current')
     const amHost = state.createdBy === uid
     const canWrite = amHost || isAdmin
-    const isPristine = state.id === initialSession.id
+    // A session with no createdBy is a blank slate — RESET_SESSION uses this
+    // shape too. Don't use state.id === 'session-initial' because the reducer
+    // mints a fresh uid on reset.
+    const isBlank = !state.createdBy
 
-    if (isPristine) {
-      // Session was reset locally. If we had a remote doc to tear down and
-      // we're allowed to delete it, remove it so other members see the
-      // tournament end.
-      if (lastIdRef.current !== initialSession.id && canWrite) {
+    if (isBlank) {
+      if (hadRemoteTournamentRef.current && canWrite) {
         void deleteDoc(ref)
+        hadRemoteTournamentRef.current = false
       }
-      lastIdRef.current = state.id
       return
     }
 
-    lastIdRef.current = state.id
     if (!canWrite) return
     void setDoc(ref, state)
+    hadRemoteTournamentRef.current = true
   }, [state, courtId, uid, isAdmin])
 
   return { state, dispatch, ready, error }

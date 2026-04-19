@@ -63,6 +63,18 @@ export default function Page() {
   // spectators watching on another device see the same score.
   const effectiveMatch: MatchState = match.phase !== 'idle' ? match : liveMatch ?? match
 
+  // If the remote tournament disappears (admin or host deleted it), any
+  // in-flight local match is orphaned. Reset the match reducer so the banner,
+  // scoreboard, and /liveMatch/current sync drop to idle on every device.
+  const prevHasTournamentRef = useRef(Boolean(session.createdBy))
+  useEffect(() => {
+    const has = Boolean(session.createdBy)
+    if (prevHasTournamentRef.current && !has && match.phase !== 'idle') {
+      matchDispatch({ type: 'RESET' })
+    }
+    prevHasTournamentRef.current = has
+  }, [session.createdBy, match.phase, matchDispatch])
+
   // Scorer → Firestore sync. Whenever the local match state changes and we
   // have a court, push a compact snapshot to /courts/{courtId}/liveMatch/current
   // so every other member subscribed via useLiveMatch gets the live update.
