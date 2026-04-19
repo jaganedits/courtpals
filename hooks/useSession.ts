@@ -526,14 +526,25 @@ export function useSession(opts: UseSessionOptions = {}) {
 
     if (isBlank) {
       if (hadRemoteTournamentRef.current && canWrite) {
-        void deleteDoc(ref)
+        deleteDoc(ref).catch(err => {
+          console.error(
+            '[courtpals] failed to delete /tournaments/current:',
+            err?.message ?? err,
+            '— republish firestore.rules so admins get delete permission.',
+          )
+        })
         hadRemoteTournamentRef.current = false
       }
       return
     }
 
     if (!canWrite) return
-    void setDoc(ref, state)
+    setDoc(ref, state).catch(err => {
+      console.error(
+        '[courtpals] failed to write /tournaments/current:',
+        err?.message ?? err,
+      )
+    })
     hadRemoteTournamentRef.current = true
   }, [state, courtId, uid, isAdmin])
 

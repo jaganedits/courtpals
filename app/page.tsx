@@ -86,15 +86,17 @@ export default function Page() {
     const ref = doc(db, 'courts', courtId, 'liveMatch', 'current')
     if (match.phase !== 'idle') {
       const { events: _events, ...rest } = match
-      void setDoc(ref, {
+      setDoc(ref, {
         ...rest,
         scorerUid: auth.user.uid,
         updatedAt: serverTimestamp(),
-      })
+      }).catch(err => console.error('[courtpals] liveMatch write failed:', err?.message ?? err))
     } else if (lastPhaseRef.current !== 'idle') {
       // Local match just went from playing/finished to idle (reset / saved);
       // clear the shared doc so spectators stop seeing a stale scoreboard.
-      void deleteDoc(ref)
+      deleteDoc(ref).catch(err =>
+        console.error('[courtpals] liveMatch delete failed:', err?.message ?? err),
+      )
     }
     lastPhaseRef.current = match.phase
   }, [match, courtId, auth.user])
