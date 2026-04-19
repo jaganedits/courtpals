@@ -5,6 +5,10 @@ export interface SessionPlayer {
   id: string
   name: string
   emoji: string
+  /** Optional avatar (Google profile photo for members who joined via invite). */
+  photoURL?: string | null
+  /** Firebase uid, when this roster entry is linked to a signed-in member. */
+  uid?: string | null
 }
 
 export interface SessionTeam {
@@ -78,6 +82,7 @@ export interface MatchState {
   fixtureId: string | null
   teamNames: [string, string]
   teamEmojis: [string, string]
+  teamPlayers: [SessionPlayer[], SessionPlayer[]]
   winTarget: WinTarget
   scores: [number, number]
   events: PointEvent[]
@@ -88,7 +93,16 @@ export interface MatchState {
 }
 
 export type MatchAction =
-  | { type: 'START_MATCH'; payload: { fixtureId: string; teamNames: [string, string]; teamEmojis: [string, string]; winTarget: WinTarget } }
+  | {
+      type: 'START_MATCH'
+      payload: {
+        fixtureId: string
+        teamNames: [string, string]
+        teamEmojis: [string, string]
+        teamPlayers: [SessionPlayer[], SessionPlayer[]]
+        winTarget: WinTarget
+      }
+    }
   | { type: 'ADD_POINT'; payload: TeamIndex }
   | { type: 'UNDO' }
   | { type: 'RESET' }

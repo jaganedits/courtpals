@@ -185,6 +185,7 @@ export function useCourt(user: User | null) {
         name: user.displayName ?? name.trim(),
         emoji: '🏸',
         uid: user.uid,
+        photoURL: user.photoURL ?? null,
       })
 
       await setDoc(
@@ -246,6 +247,7 @@ export function useCourt(user: User | null) {
           name: user.displayName ?? 'Player',
           emoji: '🏸',
           uid: user.uid,
+          photoURL: user.photoURL ?? null,
         })
       }
 

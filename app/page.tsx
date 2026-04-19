@@ -126,6 +126,7 @@ export default function Page() {
         fixtureId,
         teamNames: [tA.name, tB.name],
         teamEmojis: [tA.players[0]?.emoji ?? '🏸', tB.players[0]?.emoji ?? '🏸'],
+        teamPlayers: [tA.players, tB.players],
         winTarget: session.winTarget,
       },
     })

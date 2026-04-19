@@ -9,6 +9,7 @@ export const initialMatchState: MatchState = {
   fixtureId: null,
   teamNames: ['Team A', 'Team B'],
   teamEmojis: ['🏸', '🏸'],
+  teamPlayers: [[], []],
   winTarget: 21,
   scores: [0, 0],
   events: [],
@@ -61,7 +62,16 @@ export function matchReducer(state: MatchState, action: MatchAction): MatchState
       return initialMatchState
 
     case 'HYDRATE':
-      return action.payload
+      // Defend against payloads persisted by an older build that didn't
+      // know about teamPlayers.
+      return {
+        ...initialMatchState,
+        ...action.payload,
+        teamPlayers:
+          Array.isArray(action.payload.teamPlayers) && action.payload.teamPlayers.length === 2
+            ? action.payload.teamPlayers
+            : [[], []],
+      }
 
     default:
       return state

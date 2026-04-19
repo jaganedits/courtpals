@@ -24,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
-import type { MatchState, MatchAction, TeamIndex } from '@/types'
+import type { MatchState, MatchAction, SessionPlayer, TeamIndex } from '@/types'
 
 const SIDES: {
   idx: TeamIndex
@@ -134,6 +134,13 @@ export default function ScoreBoard({ state, dispatch, onAbandon }: Props) {
                   >
                     {state.teamNames[ti]}
                   </span>
+                  {state.teamPlayers?.[ti]?.length ? (
+                    <div className="flex flex-wrap justify-center gap-1.5">
+                      {state.teamPlayers[ti].map(p => (
+                        <PlayerChip key={p.id} player={p} accent={side.accent} />
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
 
                 <span
@@ -219,6 +226,36 @@ export default function ScoreBoard({ state, dispatch, onAbandon }: Props) {
         </section>
       )}
     </div>
+  )
+}
+
+function PlayerChip({ player, accent }: { player: SessionPlayer; accent: string }) {
+  return (
+    <span
+      className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 pl-0.5 pr-2 py-0.5"
+      style={{ borderColor: `${accent}66` }}
+    >
+      {player.photoURL ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={player.photoURL}
+          alt=""
+          className="size-5 rounded-full"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <span
+          aria-hidden
+          className="flex size-5 items-center justify-center rounded-full text-xs"
+          style={{ background: `${accent}33` }}
+        >
+          {player.emoji}
+        </span>
+      )}
+      <span className="font-display max-w-22 truncate text-[10px] font-bold">
+        {player.name}
+      </span>
+    </span>
   )
 }
 

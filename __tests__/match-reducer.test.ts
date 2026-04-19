@@ -1,9 +1,11 @@
 import { matchReducer, initialMatchState } from '../hooks/useMatch'
+import type { SessionPlayer } from '../types'
 
 const startPayload = {
   fixtureId: 'f1',
   teamNames: ['Rockets', 'Vipers'] as [string, string],
   teamEmojis: ['🏸', '🔥'] as [string, string],
+  teamPlayers: [[], []] as [SessionPlayer[], SessionPlayer[]],
   winTarget: 11 as const,
 }
 
