@@ -415,7 +415,7 @@ function Stat({
 
 // ─── Firebase-backed user menu ──────────────────────────────────────────────
 
-function FirebaseUserMenu({ players, history, onSignOut: onLocalSignOut }: Props) {
+function FirebaseUserMenu({ players, history }: Props) {
   const auth = useAuth()
   const court = useCourt(auth.user)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -497,7 +497,6 @@ function FirebaseUserMenu({ players, history, onSignOut: onLocalSignOut }: Props
           players={players}
           history={history}
           onClose={() => setProfileOpen(false)}
-          onLocalSignOut={onLocalSignOut}
         />
       </Dialog>
 
@@ -519,14 +518,12 @@ function FirebaseProfileDialogContent({
   players,
   history,
   onClose,
-  onLocalSignOut,
 }: {
   auth: ReturnType<typeof useAuth>
   court: ReturnType<typeof useCourt>
   players: SessionPlayer[]
   history: SavedSession[]
   onClose: () => void
-  onLocalSignOut: () => void
 }) {
   const [copied, setCopied] = useState(false)
 
@@ -688,9 +685,12 @@ function FirebaseProfileDialogContent({
             variant="ghost"
             size="sm"
             onClick={async () => {
-              await auth.signOut()
-              onLocalSignOut()
+              // Don't touch /users/{uid}.playerId on sign-out — we want the
+              // player linkage restored automatically on next sign-in, and
+              // the write would race with auth.signOut and throw
+              // permission-denied against the auth-less request.
               onClose()
+              await auth.signOut()
             }}
             className={cn('gap-2 text-destructive hover:text-destructive')}
           >
