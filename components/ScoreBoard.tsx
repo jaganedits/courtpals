@@ -121,7 +121,7 @@ export default function ScoreBoard({ state, dispatch, onAbandon }: Props) {
               aria-disabled={!isPlaying}
               onClick={() => isPlaying && dispatch({ type: 'ADD_POINT', payload: ti })}
               className={cn(
-                'relative aspect-[3/4] cursor-pointer overflow-hidden border-2 py-0 text-center transition-all',
+                'relative flex min-h-[70vh] cursor-pointer flex-col overflow-hidden border-2 py-0 text-center transition-all lg:min-h-[65vh]',
                 isPlaying ? 'active:scale-[0.97]' : 'cursor-default opacity-70',
               )}
               style={{
@@ -130,11 +130,11 @@ export default function ScoreBoard({ state, dispatch, onAbandon }: Props) {
                 boxShadow: isLeader ? `0 0 0 2px ${side.accent}, 0 0 24px -4px ${side.accent}80` : undefined,
               }}
             >
-              <CardContent className="flex h-full flex-col items-center justify-between p-4">
-                <div className="flex w-full flex-col items-center gap-2">
-                  <span className="text-4xl leading-none">{state.teamEmojis[ti]}</span>
+              <CardContent className="flex h-full flex-1 flex-col items-center justify-between p-4 lg:p-6">
+                <div className="flex w-full flex-col items-center gap-2 lg:gap-3">
+                  <span className="text-5xl leading-none lg:text-7xl">{state.teamEmojis[ti]}</span>
                   <span
-                    className="font-display max-w-full truncate text-xs font-extrabold uppercase tracking-[0.14em]"
+                    className="font-display max-w-full truncate text-sm font-extrabold uppercase tracking-[0.14em] lg:text-base"
                     style={{ color: side.accent }}
                   >
                     {state.teamNames[ti]}
@@ -150,8 +150,10 @@ export default function ScoreBoard({ state, dispatch, onAbandon }: Props) {
 
                 <span
                   ref={bumpRefs[ti]}
-                  className="font-score text-[96px] font-extrabold leading-none tabular"
-                  style={{ textShadow: `0 0 40px color-mix(in srgb, ${side.accent} 30%, transparent)` }}
+                  className="font-score text-[30vw] font-extrabold leading-none tabular lg:text-[18vw]"
+                  style={{
+                    textShadow: `0 0 40px color-mix(in srgb, ${side.accent} 30%, transparent)`,
+                  }}
                 >
                   {state.scores[ti]}
                 </span>
