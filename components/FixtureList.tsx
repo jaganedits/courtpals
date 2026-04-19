@@ -18,7 +18,7 @@ import {
 import { RotateCcw, Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { rankStandings } from '@/hooks/useSession'
-import type { Fixture, Round, SessionPlayer, SessionTeam } from '@/types'
+import type { Fixture, Round, SessionTeam } from '@/types'
 
 const TEAM_COLORS = [
   'var(--color-team-a)',
@@ -238,7 +238,6 @@ function MatchRow({
       {/* Team A */}
       <TeamCell
         team={tA}
-        players={tA.players}
         color={colorA}
         align="left"
         winner={isWinnerA}
@@ -261,7 +260,6 @@ function MatchRow({
       {/* Team B */}
       <TeamCell
         team={tB}
-        players={tB.players}
         color={colorB}
         align="right"
         winner={isWinnerB}
@@ -270,7 +268,7 @@ function MatchRow({
       />
 
       {/* Status pill (right) */}
-      <StatusPill isActive={isActive} isDone={isDone} mine={mine} canStart={canStart} />
+      <StatusPill isActive={isActive} isDone={isDone} />
     </div>
   )
 }
@@ -279,7 +277,6 @@ function MatchRow({
 
 function TeamCell({
   team,
-  players,
   color,
   align,
   winner,
@@ -287,7 +284,6 @@ function TeamCell({
   isMine,
 }: {
   team: SessionTeam
-  players: SessionPlayer[]
   color: string
   align: 'left' | 'right'
   winner: boolean
@@ -297,41 +293,25 @@ function TeamCell({
   return (
     <div
       className={cn(
-        'flex min-w-0 flex-col gap-1',
-        align === 'right' && 'items-end text-right',
+        'flex min-w-0 items-center gap-2',
+        align === 'right' && 'flex-row-reverse',
         loser && 'opacity-50',
       )}
     >
-      <div
-        className={cn(
-          'flex items-baseline gap-1.5',
-          align === 'right' && 'flex-row-reverse',
-        )}
-      >
-        <h3
-          className={cn(
-            'font-display truncate text-base font-extrabold leading-none tracking-tight',
-          )}
-        >
-          {team.name}
-        </h3>
-        {winner && <Trophy className="size-3 shrink-0 text-primary" />}
-        {isMine && (
-          <span className="rounded-sm bg-primary/20 px-1 py-px font-mono text-[8px] font-extrabold uppercase tracking-[0.22em] text-primary">
-            you
-          </span>
-        )}
-      </div>
-      <div
-        className={cn(
-          'flex flex-wrap items-center gap-1',
-          align === 'right' && 'justify-end',
-        )}
-      >
-        {players.map(p => (
-          <PlayerPill key={p.id} player={p} color={color} />
-        ))}
-      </div>
+      <span
+        aria-hidden
+        className="size-2 shrink-0 rounded-sm"
+        style={{ background: color }}
+      />
+      <h3 className="font-display truncate text-base font-extrabold leading-none tracking-tight">
+        {team.name}
+      </h3>
+      {winner && <Trophy className="size-3 shrink-0 text-primary" />}
+      {isMine && (
+        <span className="rounded-sm bg-primary/20 px-1 py-px font-mono text-[8px] font-extrabold uppercase tracking-[0.22em] text-primary">
+          you
+        </span>
+      )}
     </div>
   )
 }
@@ -435,24 +415,7 @@ function Scoreline({
 
 // ─── Status pill (right) ─────────────────────────────────────────────────────
 
-function StatusPill({
-  isActive,
-  isDone,
-  mine,
-  canStart,
-}: {
-  isActive: boolean
-  isDone: boolean
-  mine: boolean
-  canStart: boolean
-}) {
-  if (isActive) {
-    return (
-      <Badge className="h-5 rounded-sm bg-destructive px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-destructive-foreground hover:bg-destructive">
-        ON AIR
-      </Badge>
-    )
-  }
+function StatusPill({ isDone }: { isActive: boolean; isDone: boolean }) {
   if (isDone) {
     return (
       <Badge
@@ -463,64 +426,6 @@ function StatusPill({
       </Badge>
     )
   }
-  if (canStart) {
-    return (
-      <Badge
-        variant="outline"
-        className="h-5 rounded-sm border-primary/40 bg-primary/[0.06] px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-primary"
-      >
-        TAP
-      </Badge>
-    )
-  }
-  if (mine) {
-    return (
-      <Badge
-        variant="outline"
-        className="h-5 rounded-sm border-primary/30 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-primary"
-      >
-        YOU
-      </Badge>
-    )
-  }
-  return (
-    <Badge
-      variant="outline"
-      className="h-5 rounded-sm border-border/40 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-muted-foreground/50"
-    >
-      QUEUED
-    </Badge>
-  )
+  return null
 }
 
-// ─── Player pill ─────────────────────────────────────────────────────────────
-
-function PlayerPill({ player, color }: { player: SessionPlayer; color: string }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded-sm border border-border/40 bg-background/60 pl-0.5 pr-1.5 py-0.5"
-      style={{ boxShadow: `inset 2px 0 0 0 ${color}` }}
-    >
-      {player.photoURL ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={player.photoURL}
-          alt=""
-          className="size-3.5 rounded-full"
-          referrerPolicy="no-referrer"
-        />
-      ) : (
-        <span
-          aria-hidden
-          className="flex size-3.5 items-center justify-center rounded-full text-[9px] leading-none"
-          style={{ background: `color-mix(in srgb, ${color} 20%, transparent)` }}
-        >
-          {player.emoji}
-        </span>
-      )}
-      <span className="font-mono max-w-20 truncate text-[9px] font-extrabold uppercase tracking-[0.08em]">
-        {player.name}
-      </span>
-    </span>
-  )
-}
