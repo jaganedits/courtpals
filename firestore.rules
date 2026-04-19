@@ -94,13 +94,20 @@ service cloud.firestore {
       // createdBy field, so only the original starter of the tournament can
       // progress or end it.
       match /tournaments/{docId} {
+        function isCourtAdmin() {
+          return isSignedIn()
+            && request.auth.uid ==
+               get(/databases/$(database)/documents/courts/$(courtId)).data.createdBy;
+        }
+
         allow read: if isMember(courtId);
         allow create: if isMember(courtId)
           && request.resource.data.createdBy == request.auth.uid;
+        // Host of the tournament OR the court admin can update / delete.
         allow update: if isMember(courtId)
-          && resource.data.createdBy == request.auth.uid;
+          && (resource.data.createdBy == request.auth.uid || isCourtAdmin());
         allow delete: if isMember(courtId)
-          && resource.data.createdBy == request.auth.uid;
+          && (resource.data.createdBy == request.auth.uid || isCourtAdmin());
       }
 
       // ── Live scoreboard (public read for spectators, members write) ───────

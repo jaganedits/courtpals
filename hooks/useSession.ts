@@ -408,10 +408,13 @@ interface UseSessionOptions {
   courtId?: string | null
   /** Firebase uid of the signed-in user — needed to authorise writes as creator. */
   uid?: string | null
+  /** True when the current user is the admin of the court. Admins can write
+   *  to the tournament even when they didn't host it. */
+  isAdmin?: boolean
 }
 
 export function useSession(opts: UseSessionOptions = {}) {
-  const { courtId, uid } = opts
+  const { courtId, uid, isAdmin = false } = opts
   const [state, dispatch] = useReducer(sessionReducer, initialSession)
   /** True once the Firestore subscription has returned at least one snapshot
    *  (or immediately when running in local-only mode). Lets UI avoid
@@ -483,22 +486,24 @@ export function useSession(opts: UseSessionOptions = {}) {
     return unsub
   }, [courtId])
 
-  // Creator-only: mirror local state to Firestore on every change. Non-creators
-  // receive their state exclusively via the snapshot listener above.
+  // Mirror local state to Firestore on every change. The host of the
+  // tournament (state.createdBy === uid) always writes; court admins also
+  // have write privileges regardless of who started the tournament.
   const lastIdRef = useRef<string>(state.id)
   useEffect(() => {
     if (!courtId || !uid) return
     const db = firestore()
     if (!db) return
     const ref = doc(db, 'courts', courtId, 'tournaments', 'current')
-    const amCreator = state.createdBy === uid
+    const amHost = state.createdBy === uid
+    const canWrite = amHost || isAdmin
     const isPristine = state.id === initialSession.id
 
     if (isPristine) {
-      // Session was reset locally. If I was the previous creator of the remote
-      // tournament, tear it down so other members see it end. (Non-creators
-      // cannot write to that doc, and the rules will just reject.)
-      if (lastIdRef.current !== initialSession.id) {
+      // Session was reset locally. If we had a remote doc to tear down and
+      // we're allowed to delete it, remove it so other members see the
+      // tournament end.
+      if (lastIdRef.current !== initialSession.id && canWrite) {
         void deleteDoc(ref)
       }
       lastIdRef.current = state.id
@@ -506,9 +511,9 @@ export function useSession(opts: UseSessionOptions = {}) {
     }
 
     lastIdRef.current = state.id
-    if (!amCreator) return
+    if (!canWrite) return
     void setDoc(ref, state)
-  }, [state, courtId, uid])
+  }, [state, courtId, uid, isAdmin])
 
   return { state, dispatch, ready, error }
 }

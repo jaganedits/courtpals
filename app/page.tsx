@@ -47,8 +47,13 @@ export default function Page() {
     useSession({
       courtId,
       uid: auth.user?.uid ?? null,
+      isAdmin: court.isAdmin,
     })
-  const canEdit = !session.createdBy || !auth.user || session.createdBy === auth.user.uid
+  const canEdit =
+    !session.createdBy ||
+    !auth.user ||
+    session.createdBy === auth.user.uid ||
+    court.isAdmin
   const { state: match, dispatch: matchDispatch } = useMatch()
   const { history, saveSession, clearHistory } = useHistory(courtId)
   const { liveMatch } = useLiveMatch(courtId)
