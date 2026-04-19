@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { firestore } from '@/lib/firebase'
 import { Trophy, Users, BadgeCheck, Calendar } from 'lucide-react'
@@ -107,6 +107,15 @@ export default function Page() {
   }, [match, courtId, auth.user])
 
   const activeFixture = session.fixtures.find(f => f.id === session.activeFixtureId) ?? null
+
+  // Which team does the signed-in player belong to for this session?
+  // Used to highlight their matches + standings row.
+  const myTeamId = useMemo(() => {
+    if (!currentPlayerId) return null
+    return (
+      session.teams.find(t => t.players.some(p => p.id === currentPlayerId))?.id ?? null
+    )
+  }, [session.teams, currentPlayerId])
   const scoreTabEnabled = match.phase !== 'idle'
 
   function handleTogglePlayer(id: string) {
@@ -288,6 +297,7 @@ export default function Page() {
             currentUid={auth.user?.uid ?? ''}
             sessionReady={sessionReady}
             sessionError={sessionError}
+            myTeamId={myTeamId}
           />
         )}
         {tab === 'players' && (

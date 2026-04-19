@@ -7,6 +7,7 @@ import TeamBuilder from './TeamBuilder'
 import FixtureList from './FixtureList'
 import Standings from './Standings'
 import LiveMatchBanner from './LiveMatchBanner'
+import PersonalSummary from './PersonalSummary'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import {
@@ -50,6 +51,8 @@ interface Props {
   sessionReady?: boolean
   /** Non-null when the subscription errored — usually a rules publish issue. */
   sessionError?: string | null
+  /** id of the signed-in user's team in this session, for personal highlighting. */
+  myTeamId?: string | null
 }
 
 export default function LeagueHub({
@@ -66,6 +69,7 @@ export default function LeagueHub({
   currentUid = '',
   sessionReady = true,
   sessionError = null,
+  myTeamId = null,
 }: Props) {
   const [view, setView] = useState<LeagueView>(() =>
     session.phase === 'setup'
@@ -363,6 +367,7 @@ export default function LeagueHub({
           onStartFixture={canEdit ? handleStartFixture : () => {}}
           onResetFixture={canEdit ? fid => dispatch({ type: 'RESET_FIXTURE', payload: fid }) : undefined}
           canEdit={canEdit}
+          myTeamId={myTeamId}
         />
       )}
 
@@ -370,17 +375,29 @@ export default function LeagueHub({
       {showSplit && (
         <div className="lg:hidden">
           {view === 'fixtures' && (
-            <FixtureList
-              fixtures={session.fixtures}
-              teams={session.teams}
-              onStartFixture={canEdit ? handleStartFixture : () => {}}
-              onResetFixture={canEdit ? fid => dispatch({ type: 'RESET_FIXTURE', payload: fid }) : undefined}
-              canEdit={canEdit}
-            />
+            <>
+              {myTeamId && (
+                <div className="px-4 pt-4">
+                  <PersonalSummary
+                    teams={session.teams}
+                    fixtures={session.fixtures}
+                    myTeamId={myTeamId}
+                  />
+                </div>
+              )}
+              <FixtureList
+                fixtures={session.fixtures}
+                teams={session.teams}
+                onStartFixture={canEdit ? handleStartFixture : () => {}}
+                onResetFixture={canEdit ? fid => dispatch({ type: 'RESET_FIXTURE', payload: fid }) : undefined}
+                canEdit={canEdit}
+                myTeamId={myTeamId}
+              />
+            </>
           )}
           {view === 'standings' && (
             <>
-              <Standings teams={session.teams} fixtures={session.fixtures} />
+              <Standings teams={session.teams} fixtures={session.fixtures} myTeamId={myTeamId} />
               {saveButton && (
                 <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+72px)] z-30 px-4 pb-2">
                   {saveButton}
@@ -398,15 +415,25 @@ export default function LeagueHub({
             <div className="flex justify-end pt-4 pr-4">{resetDialog}</div>
           )}
           <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-            <FixtureList
-              fixtures={session.fixtures}
-              teams={session.teams}
-              onStartFixture={canEdit ? handleStartFixture : () => {}}
-              onResetFixture={canEdit ? fid => dispatch({ type: 'RESET_FIXTURE', payload: fid }) : undefined}
-              canEdit={canEdit}
-            />
+            <div className="flex flex-col gap-4">
+              {myTeamId && (
+                <PersonalSummary
+                  teams={session.teams}
+                  fixtures={session.fixtures}
+                  myTeamId={myTeamId}
+                />
+              )}
+              <FixtureList
+                fixtures={session.fixtures}
+                teams={session.teams}
+                onStartFixture={canEdit ? handleStartFixture : () => {}}
+                onResetFixture={canEdit ? fid => dispatch({ type: 'RESET_FIXTURE', payload: fid }) : undefined}
+                canEdit={canEdit}
+                myTeamId={myTeamId}
+              />
+            </div>
             <aside className="flex flex-col gap-4">
-              <Standings teams={session.teams} fixtures={session.fixtures} />
+              <Standings teams={session.teams} fixtures={session.fixtures} myTeamId={myTeamId} />
               {saveButton && <div className="px-4 pb-6">{saveButton}</div>}
             </aside>
           </div>

@@ -58,6 +58,8 @@ interface Props {
   onResetFixture?: (fixtureId: string) => void
   /** Non-creators see the fixtures but cannot tap to start or reset them. */
   canEdit?: boolean
+  /** When set, fixtures involving this team get a personal "you" highlight. */
+  myTeamId?: string | null
 }
 
 function teamIndex(teams: SessionTeam[], id: string): number {
@@ -68,7 +70,14 @@ function teamById(teams: SessionTeam[], id: string): SessionTeam {
   return teams.find(t => t.id === id) ?? { id, name: '—', players: [] }
 }
 
-export default function FixtureList({ fixtures, teams, onStartFixture, onResetFixture, canEdit = true }: Props) {
+export default function FixtureList({
+  fixtures,
+  teams,
+  onStartFixture,
+  onResetFixture,
+  canEdit = true,
+  myTeamId = null,
+}: Props) {
   const done = fixtures.filter(f => f.status === 'done').length
   const total = fixtures.length
   const progressPct = total === 0 ? 0 : (done / total) * 100
@@ -137,6 +146,9 @@ export default function FixtureList({ fixtures, teams, onStartFixture, onResetFi
               const isWinnerA = isDone && f.winnerId === f.teamAId
               const isWinnerB = isDone && f.winnerId === f.teamBId
               const chip = roundChip(group.round, i)
+              const mine = Boolean(
+                myTeamId && (f.teamAId === myTeamId || f.teamBId === myTeamId),
+              )
 
               return (
                 <Card
@@ -151,6 +163,7 @@ export default function FixtureList({ fixtures, teams, onStartFixture, onResetFi
                     canStart && 'cursor-pointer hover:border-primary/40 active:scale-[0.99]',
                     !canStart && !isActive && 'opacity-80',
                     group.round !== 'rr' && 'border-primary/40',
+                    mine && !isActive && 'border-primary/70 bg-primary/5 ring-1 ring-primary/30',
                   )}
                 >
                   <CardContent className="flex items-stretch p-0">
@@ -185,6 +198,14 @@ export default function FixtureList({ fixtures, teams, onStartFixture, onResetFi
                       />
 
                       <div className="flex shrink-0 flex-col items-center gap-1 px-1">
+                        {mine && (
+                          <Badge
+                            variant="secondary"
+                            className="font-display text-[9px] uppercase tracking-[0.16em] text-primary border-primary/40 bg-primary/15"
+                          >
+                            you
+                          </Badge>
+                        )}
                         {isActive ? (
                           <Badge className="animate-live font-display text-[9px] uppercase tracking-[0.16em]">
                             live

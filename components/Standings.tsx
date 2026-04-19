@@ -20,9 +20,11 @@ const MEDALS = ['🥇', '🥈', '🥉']
 interface Props {
   teams: SessionTeam[]
   fixtures: Fixture[]
+  /** Highlight this team's row for the signed-in player. */
+  myTeamId?: string | null
 }
 
-export default function Standings({ teams, fixtures }: Props) {
+export default function Standings({ teams, fixtures, myTeamId = null }: Props) {
   const rows = rankStandings(teams, fixtures)
   const anyDone = rows.some(r => r.played > 0)
 
@@ -61,12 +63,17 @@ export default function Standings({ teams, fixtures }: Props) {
                 const rank = i + 1
                 const medal = MEDALS[i]
                 const isTop = i === 0 && row.played > 0
+                const mine = myTeamId === row.team.id
 
                 return (
                   <TableRow
                     key={row.team.id}
                     style={{ animationDelay: `${i * 50}ms` }}
-                    className={cn('animate-rise', isTop && 'bg-primary/5')}
+                    className={cn(
+                      'animate-rise',
+                      isTop && 'bg-primary/5',
+                      mine && 'bg-primary/15 ring-1 ring-primary/40',
+                    )}
                   >
                     <TableCell className="text-center">
                       <span className="font-score text-sm font-extrabold tabular">
@@ -87,6 +94,11 @@ export default function Standings({ teams, fixtures }: Props) {
                         <div className="min-w-0">
                           <p className="truncate font-display text-sm font-extrabold leading-tight">
                             {row.team.name}
+                            {mine && (
+                              <span className="ml-1.5 inline-block rounded-full bg-primary/25 px-1.5 py-0.5 align-middle font-display text-[8px] font-extrabold uppercase tracking-[0.18em] text-primary">
+                                you
+                              </span>
+                            )}
                           </p>
                           <p className="truncate text-[10px] text-muted-foreground leading-tight">
                             {row.team.players.map(p => p.name).join(' · ') || '—'}
