@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Trophy, Dices } from 'lucide-react'
+import { Trophy, Dices, CalendarCheck, Play } from 'lucide-react'
 import DaySetup from './DaySetup'
 import TeamBuilder from './TeamBuilder'
 import FixtureList from './FixtureList'
@@ -51,11 +51,17 @@ export default function LeagueHub({
   onSaveSession,
 }: Props) {
   const [view, setView] = useState<LeagueView>(() =>
-    session.phase === 'setup' ? 'checkin' : session.phase === 'done' ? 'standings' : 'fixtures',
+    session.phase === 'setup'
+      ? 'checkin'
+      : session.phase === 'done'
+      ? 'standings'
+      : 'fixtures',
   )
 
   useEffect(() => {
     if (session.phase === 'setup' && view !== 'checkin' && view !== 'teams') setView('checkin')
+    if (session.phase === 'scheduled' && view !== 'teams' && view !== 'fixtures')
+      setView('fixtures')
     if ((session.phase === 'active' || session.phase === 'playoffs') && view === 'checkin')
       setView('fixtures')
     if (session.phase === 'done' && view !== 'standings' && view !== 'fixtures') setView('standings')
@@ -75,6 +81,7 @@ export default function LeagueHub({
   }
 
   function handleStartFixture(fid: string) {
+    if (session.phase === 'scheduled') dispatch({ type: 'BEGIN_PLAY' })
     dispatch({ type: 'START_FIXTURE', payload: fid })
     onStartFixture(fid)
   }
@@ -85,10 +92,16 @@ export default function LeagueHub({
   }
 
   const isSetupPhase = session.phase === 'setup'
+  const isScheduled = session.phase === 'scheduled'
   const subTabs: { id: LeagueView; label: string }[] = isSetupPhase
     ? [
         { id: 'checkin', label: 'Check-in' },
         { id: 'teams', label: 'Teams' },
+      ]
+    : isScheduled
+    ? [
+        { id: 'teams', label: 'Teams' },
+        { id: 'fixtures', label: 'Fixtures' },
       ]
     : [
         { id: 'fixtures', label: 'Fixtures' },
@@ -97,11 +110,12 @@ export default function LeagueHub({
 
   const canReset =
     session.phase === 'done' ||
+    session.phase === 'scheduled' ||
     ((session.phase === 'active' || session.phase === 'playoffs') &&
       session.fixtures.every(f => f.status === 'pending')) ||
     (session.phase === 'setup' && session.teams.length > 0)
 
-  const showSplit = !isSetupPhase // active / playoffs / done
+  const showSplit = !isSetupPhase && !isScheduled // only active / playoffs / done use the split view
   const saveButton =
     session.phase === 'done' ? (
       <Button
@@ -141,9 +155,48 @@ export default function LeagueHub({
     </AlertDialog>
   ) : null
 
+  const scheduledDateLabel = isScheduled
+    ? new Date(session.date).toLocaleDateString('default', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+      })
+    : ''
+
   return (
     <div className="flex flex-col">
-      {/* Sub-tab bar: always visible during setup; mobile-only when in active/playoffs/done (desktop shows both) */}
+      {isScheduled && (
+        <div className="mx-4 mt-4 flex flex-col gap-3 rounded-2xl border-2 border-primary/40 bg-primary/10 p-4 lg:mx-6 lg:flex-row lg:items-center">
+          <div className="flex items-start gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/20">
+              <CalendarCheck className="size-5 text-primary" />
+            </span>
+            <div className="min-w-0">
+              <p className="font-display text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
+                ready to play
+              </p>
+              <p className="font-display text-lg font-extrabold leading-tight">
+                Match day · {scheduledDateLabel}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {session.teams.length} teams &middot; {session.fixtures.length} fixtures queued
+              </p>
+            </div>
+          </div>
+          <Button
+            size="lg"
+            onClick={() => dispatch({ type: 'BEGIN_PLAY' })}
+            className="h-auto justify-between gap-2 rounded-xl border-2 border-primary px-4 py-3 shadow-brut active:translate-x-0.5 active:translate-y-0.5 active:shadow-none lg:ml-auto"
+          >
+            <Play className="size-4" />
+            <span className="font-display text-sm font-extrabold uppercase tracking-[0.14em]">
+              Start playing
+            </span>
+          </Button>
+        </div>
+      )}
+
+      {/* Sub-tab bar: always visible during setup/scheduled; mobile-only when in active/playoffs/done (desktop shows both) */}
       <div
         className={cn(
           'flex items-center gap-2 border-b border-border/60 bg-background/90 px-4 py-2 backdrop-blur-md',
@@ -174,6 +227,7 @@ export default function LeagueHub({
           onToggle={onTogglePlayer}
           winTarget={session.winTarget}
           teamSize={session.teamSize}
+          sessionDate={session.date}
           dispatch={dispatch}
           onAutoSplit={handleAutoSplit}
         />
@@ -203,6 +257,15 @@ export default function LeagueHub({
             </EmptyHeader>
           </Empty>
         </div>
+      )}
+
+      {/* Scheduled: render the preview view picked by the sub-tab */}
+      {isScheduled && view === 'fixtures' && (
+        <FixtureList
+          fixtures={session.fixtures}
+          teams={session.teams}
+          onStartFixture={handleStartFixture}
+        />
       )}
 
       {/* Mobile (single view based on sub-tab) */}

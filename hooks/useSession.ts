@@ -1,10 +1,22 @@
 'use client'
 
-import { useReducer } from 'react'
+import { useEffect, useReducer } from 'react'
 import type { DaySession, SessionAction, SessionPlayer, SessionTeam, Fixture, Round, TeamSize } from '@/types'
+
+const STORAGE_KEY = 'courtpals_session'
 
 function uid(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function startOfDay(ts: number): number {
+  const d = new Date(ts)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+
+function isFutureDay(ts: number): boolean {
+  return startOfDay(ts) > startOfDay(Date.now())
 }
 
 function makeFixture(teamAId: string, teamBId: string, round: Round): Fixture {
@@ -197,7 +209,13 @@ export function sessionReducer(state: DaySession, action: SessionAction): DaySes
       return { ...state, teamSize: action.payload }
 
     case 'AUTO_SPLIT_TEAMS':
-      return { ...state, teams: buildTeamsFromPlayers(state.players, state.teamSize) }
+      // Re-shuffling a scheduled session invalidates its fixtures; drop back to setup so the user confirms again.
+      return {
+        ...state,
+        teams: buildTeamsFromPlayers(state.players, state.teamSize),
+        fixtures: state.phase === 'scheduled' ? [] : state.fixtures,
+        phase: state.phase === 'scheduled' ? 'setup' : state.phase,
+      }
 
     case 'ASSIGN_PLAYER_TO_TEAM': {
       const { playerId, teamId } = action.payload
@@ -226,9 +244,10 @@ export function sessionReducer(state: DaySession, action: SessionAction): DaySes
       return {
         ...state,
         id: uid(),
-        date: Date.now(),
+        // Keep the user-picked session date; default to today if still unset.
+        date: state.date || startOfDay(Date.now()),
         fixtures: generateRoundRobin(state.teams),
-        phase: 'active',
+        phase: isFutureDay(state.date || Date.now()) ? 'scheduled' : 'active',
       }
 
     case 'START_FIXTURE':
@@ -287,14 +306,56 @@ export function sessionReducer(state: DaySession, action: SessionAction): DaySes
     }
 
     case 'RESET_SESSION':
-      return { ...initialSession, id: uid(), date: Date.now() }
+      return { ...initialSession, id: uid(), date: startOfDay(Date.now()) }
+
+    case 'SET_SESSION_DATE':
+      return { ...state, date: startOfDay(action.payload) }
+
+    case 'BEGIN_PLAY':
+      if (state.phase !== 'scheduled') return state
+      return { ...state, phase: 'active' }
+
+    case 'HYDRATE_SESSION':
+      return action.payload
 
     default:
       return state
   }
 }
 
+function loadPersisted(): DaySession | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw) as DaySession
+  } catch {
+    return null
+  }
+}
+
 export function useSession() {
   const [state, dispatch] = useReducer(sessionReducer, initialSession)
+
+  // Hydrate persisted session on mount.
+  useEffect(() => {
+    const persisted = loadPersisted()
+    if (persisted) dispatch({ type: 'HYDRATE_SESSION', payload: persisted })
+  }, [])
+
+  // Persist every state change (skip the pristine sentinel).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (state.id === initialSession.id) {
+      localStorage.removeItem(STORAGE_KEY)
+      return
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    } catch {
+      // quota / serialization — silent fail is fine for this non-critical cache.
+    }
+  }, [state])
+
   return { state, dispatch }
 }

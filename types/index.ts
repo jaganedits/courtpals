@@ -28,7 +28,7 @@ export interface Fixture {
   round: Round
 }
 
-export type SessionPhase = 'setup' | 'active' | 'playoffs' | 'done'
+export type SessionPhase = 'setup' | 'scheduled' | 'active' | 'playoffs' | 'done'
 
 export interface DaySession {
   id: string
@@ -55,6 +55,9 @@ export type SessionAction =
   | { type: 'FINISH_FIXTURE'; payload: { fixtureId: string; scoreA: number; scoreB: number; winnerId: string } }
   | { type: 'RESET_SESSION' }
   | { type: 'UPDATE_TEAM_NAME'; payload: { id: string; name: string } }
+  | { type: 'SET_SESSION_DATE'; payload: number }
+  | { type: 'BEGIN_PLAY' }
+  | { type: 'HYDRATE_SESSION'; payload: DaySession }
 
 export type TeamIndex = 0 | 1
 

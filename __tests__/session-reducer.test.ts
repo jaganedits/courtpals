@@ -177,6 +177,63 @@ describe('sessionReducer', () => {
     })
   })
 
+  describe('scheduled sessions', () => {
+    function midnight(daysFromNow: number): number {
+      const d = new Date()
+      d.setDate(d.getDate() + daysFromNow)
+      d.setHours(0, 0, 0, 0)
+      return d.getTime()
+    }
+
+    function readyForPlay(dayOffset: number) {
+      let s = withPlayers(p1, p2, p3, p4)
+      s = sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })
+      s = sessionReducer(s, { type: 'SET_SESSION_DATE', payload: midnight(dayOffset) })
+      s = sessionReducer(s, { type: 'START_SESSION' })
+      return s
+    }
+
+    it('SET_SESSION_DATE normalises to start-of-day', () => {
+      const noon = new Date()
+      noon.setHours(14, 30, 0, 0)
+      const s = sessionReducer(initialSession, { type: 'SET_SESSION_DATE', payload: noon.getTime() })
+      const stored = new Date(s.date)
+      expect(stored.getHours()).toBe(0)
+      expect(stored.getMinutes()).toBe(0)
+    })
+
+    it('START_SESSION with today => phase active', () => {
+      const s = readyForPlay(0)
+      expect(s.phase).toBe('active')
+    })
+
+    it('START_SESSION with a future date => phase scheduled', () => {
+      const s = readyForPlay(3)
+      expect(s.phase).toBe('scheduled')
+      expect(s.fixtures.length).toBeGreaterThan(0)
+    })
+
+    it('BEGIN_PLAY transitions scheduled -> active', () => {
+      let s = readyForPlay(3)
+      s = sessionReducer(s, { type: 'BEGIN_PLAY' })
+      expect(s.phase).toBe('active')
+    })
+
+    it('BEGIN_PLAY is a no-op outside scheduled', () => {
+      const active = readyForPlay(0)
+      const after = sessionReducer(active, { type: 'BEGIN_PLAY' })
+      expect(after).toBe(active)
+    })
+
+    it('AUTO_SPLIT_TEAMS on a scheduled session clears fixtures and drops to setup', () => {
+      let s = readyForPlay(5)
+      expect(s.phase).toBe('scheduled')
+      s = sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })
+      expect(s.phase).toBe('setup')
+      expect(s.fixtures).toEqual([])
+    })
+  })
+
   describe('UPDATE_TEAM_NAME', () => {
     function built() {
       let s = withPlayers(p1, p2, p3, p4)

@@ -2,7 +2,9 @@
 
 import { Dices, Users, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { CalendarDays } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import {
   Table,
   TableBody,
@@ -32,8 +34,31 @@ interface Props {
   onToggle: (id: string) => void
   winTarget: WinTarget
   teamSize: TeamSize
+  sessionDate: number
   dispatch: React.Dispatch<SessionAction>
   onAutoSplit: () => void
+}
+
+function toInputDate(ts: number): string {
+  const d = new Date(ts || Date.now())
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function fromInputDate(value: string): number {
+  const [y, m, d] = value.split('-').map(Number)
+  if (!y || !m || !d) return Date.now()
+  return new Date(y, m - 1, d).getTime()
+}
+
+function isFutureDay(ts: number): boolean {
+  const day = new Date(ts)
+  day.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return day.getTime() > today.getTime()
 }
 
 export default function DaySetup({
@@ -42,6 +67,7 @@ export default function DaySetup({
   onToggle,
   winTarget,
   teamSize,
+  sessionDate,
   dispatch,
   onAutoSplit,
 }: Props) {
@@ -94,6 +120,28 @@ export default function DaySetup({
             : `Round-robin \u00b7 ${matchCount} matches \u2192 Semis \u2192 Final + 3rd-place`}
         </p>
       )}
+
+      <section className="flex flex-col gap-2">
+        <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground px-1">
+          Match day
+        </p>
+        <label className="relative flex items-center gap-2 rounded-xl border-2 border-border bg-card px-3 py-2 transition-colors focus-within:border-primary">
+          <CalendarDays className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <Input
+            type="date"
+            value={toInputDate(sessionDate)}
+            onChange={e =>
+              dispatch({ type: 'SET_SESSION_DATE', payload: fromInputDate(e.target.value) })
+            }
+            className="h-auto border-0 bg-transparent p-0 font-display text-sm font-bold shadow-none focus-visible:ring-0"
+          />
+          {isFutureDay(sessionDate) && (
+            <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 font-display text-[9px] font-bold uppercase tracking-[0.16em] text-primary">
+              scheduled
+            </span>
+          )}
+        </label>
+      </section>
 
       <section className="flex flex-col gap-2">
         <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground px-1">
