@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   arrayUnion,
   doc,
@@ -122,6 +122,31 @@ export function useCourt(user: User | null) {
     return unsub
   }, [user])
 
+  // Keep the linked roster entry's Google photo + name fresh on every
+  // signed-in visit. Runs once per (playerId, courtId, user.photoURL) tuple.
+  const lastSyncedPhotoRef = useRef<string>('')
+  useEffect(() => {
+    const db = firestore()
+    if (!db || !user) return
+    const courtId = state.profile?.courtId
+    const playerId = state.profile?.playerId
+    if (!courtId || !playerId) return
+    const signature = `${courtId}|${playerId}|${user.photoURL ?? ''}|${user.displayName ?? ''}`
+    if (lastSyncedPhotoRef.current === signature) return
+    lastSyncedPhotoRef.current = signature
+    setDoc(
+      doc(db, 'courts', courtId, 'players', playerId),
+      {
+        name: user.displayName ?? 'Player',
+        uid: user.uid,
+        photoURL: user.photoURL ?? null,
+      },
+      { merge: true },
+    ).catch(err =>
+      console.warn('[courtpals] roster photo sync failed:', err?.message ?? err),
+    )
+  }, [user, state.profile?.courtId, state.profile?.playerId])
+
   // When the profile points at a courtId, subscribe to the court doc.
   useEffect(() => {
     const db = firestore()
@@ -239,7 +264,21 @@ export function useCourt(user: User | null) {
       if (playerId) {
         // Confirm the roster entry still exists — admin may have deleted it.
         const existingPlayer = await getDoc(doc(db, 'courts', courtId, 'players', playerId))
-        if (!existingPlayer.exists()) playerId = null
+        if (!existingPlayer.exists()) {
+          playerId = null
+        } else {
+          // Keep the roster record in sync with the latest Google profile
+          // (photo / name can change between joins).
+          await setDoc(
+            doc(db, 'courts', courtId, 'players', playerId),
+            {
+              name: user.displayName ?? 'Player',
+              uid: user.uid,
+              photoURL: user.photoURL ?? null,
+            },
+            { merge: true },
+          )
+        }
       }
       if (!playerId) {
         playerId = generatePlayerId()
