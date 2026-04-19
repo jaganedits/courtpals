@@ -94,7 +94,12 @@ export default function ScoreBoard({ state, dispatch, onAbandon }: Props) {
       <Card className="py-2">
         <CardContent className="flex items-center justify-between px-3 py-1">
           <div className="flex items-center gap-2">
-            <Badge className={cn('font-display text-[9px] uppercase tracking-[0.2em]', isPlaying && 'animate-live')}>
+            <Badge
+              className={cn(
+                'font-display text-[9px] uppercase tracking-[0.2em]',
+                isPlaying && 'animate-live bg-destructive text-destructive-foreground hover:bg-destructive',
+              )}
+            >
               {isPlaying ? 'live' : 'final'}
             </Badge>
             <span className="font-display text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">

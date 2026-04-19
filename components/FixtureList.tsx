@@ -159,10 +159,10 @@ export default function FixtureList({
                   style={{ animationDelay: `${(gi * 4 + i) * 40}ms` }}
                   className={cn(
                     'animate-rise gap-0 overflow-hidden border-2 py-0 transition-all',
-                    isActive && 'border-primary ring-2 ring-primary/50',
+                    isActive && 'border-destructive ring-2 ring-destructive/50',
                     canStart && 'cursor-pointer hover:border-primary/40 active:scale-[0.99]',
                     !canStart && !isActive && 'opacity-80',
-                    group.round !== 'rr' && 'border-primary/40',
+                    group.round !== 'rr' && !isActive && 'border-primary/40',
                     mine && !isActive && 'border-primary/70 bg-primary/5 ring-1 ring-primary/30',
                   )}
                 >
@@ -207,7 +207,7 @@ export default function FixtureList({
                           </Badge>
                         )}
                         {isActive ? (
-                          <Badge className="animate-live font-display text-[9px] uppercase tracking-[0.16em]">
+                          <Badge className="animate-live font-display text-[9px] uppercase tracking-[0.16em] bg-destructive text-destructive-foreground hover:bg-destructive">
                             live
                           </Badge>
                         ) : isDone ? (

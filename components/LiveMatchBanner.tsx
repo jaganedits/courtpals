@@ -31,14 +31,14 @@ export default function LiveMatchBanner({ match, onOpen }: Props) {
       className={cn(
         'group w-full rounded-2xl border-2 p-3 text-left transition-all hover:scale-[1.01] active:scale-[0.99]',
         isPlaying
-          ? 'border-primary bg-primary/10 shadow-brut'
+          ? 'border-destructive bg-destructive/10 shadow-brut'
           : 'border-chart-2/40 bg-chart-2/10',
       )}
       aria-label="Open scoreboard"
     >
       <div className="flex items-center gap-2">
         {isPlaying ? (
-          <Badge className="animate-live font-display text-[9px] uppercase tracking-[0.2em]">
+          <Badge className="animate-live font-display text-[9px] uppercase tracking-[0.2em] bg-destructive text-destructive-foreground hover:bg-destructive">
             live
           </Badge>
         ) : (
