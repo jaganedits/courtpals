@@ -2,9 +2,11 @@
 
 import { Dices, Users, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useState } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Table,
   TableBody,
@@ -39,26 +41,21 @@ interface Props {
   onAutoSplit: () => void
 }
 
-function toInputDate(ts: number): string {
-  const d = new Date(ts || Date.now())
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-function fromInputDate(value: string): number {
-  const [y, m, d] = value.split('-').map(Number)
-  if (!y || !m || !d) return Date.now()
-  return new Date(y, m - 1, d).getTime()
-}
-
 function isFutureDay(ts: number): boolean {
   const day = new Date(ts)
   day.setHours(0, 0, 0, 0)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   return day.getTime() > today.getTime()
+}
+
+function formatMatchDate(ts: number): string {
+  return new Date(ts || Date.now()).toLocaleDateString('default', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
 }
 
 export default function DaySetup({
@@ -77,6 +74,7 @@ export default function DaySetup({
   const oddPlayer = teamSize === 2 && selectedCount > 0 && selectedCount % 2 === 1
   const allChecked = allPlayers.length > 0 && selectedCount === allPlayers.length
   const someChecked = selectedCount > 0 && !allChecked
+  const [dateOpen, setDateOpen] = useState(false)
 
   function handleToggleAll() {
     // If everyone is already checked in, clear them; otherwise fill the missing.
@@ -125,22 +123,40 @@ export default function DaySetup({
         <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground px-1">
           Match day
         </p>
-        <label className="relative flex items-center gap-2 rounded-xl border-2 border-border bg-card px-3 py-2 transition-colors focus-within:border-primary">
-          <CalendarDays className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-          <Input
-            type="date"
-            value={toInputDate(sessionDate)}
-            onChange={e =>
-              dispatch({ type: 'SET_SESSION_DATE', payload: fromInputDate(e.target.value) })
-            }
-            className="h-auto border-0 bg-transparent p-0 font-display text-sm font-bold shadow-none focus-visible:ring-0"
-          />
-          {isFutureDay(sessionDate) && (
-            <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 font-display text-[9px] font-bold uppercase tracking-[0.16em] text-primary">
-              scheduled
-            </span>
-          )}
-        </label>
+        <Popover open={dateOpen} onOpenChange={setDateOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-3 rounded-xl border-2 border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 aria-expanded:border-primary"
+              aria-expanded={dateOpen}
+              aria-haspopup="dialog"
+            >
+              <CalendarDays className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="font-display text-sm font-bold">
+                {formatMatchDate(sessionDate)}
+              </span>
+              {isFutureDay(sessionDate) && (
+                <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 font-display text-[9px] font-bold uppercase tracking-[0.16em] text-primary">
+                  scheduled
+                </span>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={sessionDate ? new Date(sessionDate) : undefined}
+              onSelect={day => {
+                if (!day) return
+                const ts = new Date(day)
+                ts.setHours(0, 0, 0, 0)
+                dispatch({ type: 'SET_SESSION_DATE', payload: ts.getTime() })
+                setDateOpen(false)
+              }}
+              captionLayout="dropdown"
+            />
+          </PopoverContent>
+        </Popover>
       </section>
 
       <section className="flex flex-col gap-2">
