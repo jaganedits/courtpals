@@ -136,10 +136,10 @@ export default function Page() {
             </span>
             <div className="flex flex-col">
               <span className="font-display text-[9px] font-bold uppercase tracking-[0.22em] text-[var(--color-ink-dim)] leading-none">
-                saturday league
+                {court.court?.name ? 'CourtPals' : 'saturday league'}
               </span>
               <span className="font-display text-base font-extrabold leading-tight text-[var(--color-chalk)] lg:text-xl">
-                CourtPals
+                {court.court?.name ?? 'CourtPals'}
               </span>
             </div>
           </div>
