@@ -254,9 +254,15 @@ export function sessionReducer(state: DaySession, action: SessionAction): DaySes
       return {
         ...state,
         activeFixtureId: action.payload,
-        fixtures: state.fixtures.map(f =>
-          f.id === action.payload ? { ...f, status: 'active' } : f
-        ),
+        fixtures: state.fixtures.map(f => {
+          if (f.id === action.payload) return { ...f, status: 'active' as const }
+          // Only one fixture is on court at a time. Any previously-active match is
+          // implicitly abandoned when a new one starts.
+          if (f.status === 'active') {
+            return { ...f, status: 'pending' as const, scoreA: 0, scoreB: 0, winnerId: null }
+          }
+          return f
+        }),
       }
 
     case 'ABANDON_FIXTURE':
@@ -327,8 +333,18 @@ export function sessionReducer(state: DaySession, action: SessionAction): DaySes
       if (state.phase !== 'scheduled') return state
       return { ...state, phase: 'active' }
 
-    case 'HYDRATE_SESSION':
-      return action.payload
+    case 'HYDRATE_SESSION': {
+      const p = action.payload
+      // Heal any legacy snapshot where multiple fixtures were left in 'active'
+      // state. Keep only the one pointed at by activeFixtureId; reset the rest.
+      const fixtures = p.fixtures.map(f => {
+        if (f.status === 'active' && f.id !== p.activeFixtureId) {
+          return { ...f, status: 'pending' as const, scoreA: 0, scoreB: 0, winnerId: null }
+        }
+        return f
+      })
+      return { ...p, fixtures }
+    }
 
     default:
       return state

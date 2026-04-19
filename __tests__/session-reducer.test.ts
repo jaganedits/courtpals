@@ -151,6 +151,36 @@ describe('sessionReducer', () => {
       expect(s.activeFixtureId).toBe(fid)
     })
 
+    it('starting a second fixture resets the previous one to pending', () => {
+      let s = readySession()
+      const [first, second] = s.fixtures
+      s = sessionReducer(s, { type: 'START_FIXTURE', payload: first.id })
+      expect(s.fixtures.find(f => f.id === first.id)?.status).toBe('active')
+      s = sessionReducer(s, { type: 'START_FIXTURE', payload: second.id })
+      expect(s.fixtures.find(f => f.id === first.id)?.status).toBe('pending')
+      expect(s.fixtures.find(f => f.id === second.id)?.status).toBe('active')
+      expect(s.activeFixtureId).toBe(second.id)
+      // Only one fixture is live at a time.
+      expect(s.fixtures.filter(f => f.status === 'active')).toHaveLength(1)
+    })
+
+    it('HYDRATE_SESSION heals a snapshot where multiple fixtures are active', () => {
+      let s = readySession()
+      const [first, second] = s.fixtures
+      // Hand-craft a corrupt snapshot: two fixtures active, activeFixtureId points at one.
+      const corrupt: typeof s = {
+        ...s,
+        activeFixtureId: second.id,
+        fixtures: s.fixtures.map(f =>
+          f.id === first.id || f.id === second.id ? { ...f, status: 'active' } : f,
+        ),
+      }
+      const healed = sessionReducer(s, { type: 'HYDRATE_SESSION', payload: corrupt })
+      expect(healed.fixtures.filter(f => f.status === 'active')).toHaveLength(1)
+      expect(healed.fixtures.find(f => f.id === second.id)?.status).toBe('active')
+      expect(healed.fixtures.find(f => f.id === first.id)?.status).toBe('pending')
+    })
+
     it('marks fixture as done with scores and winner', () => {
       let s = readySession()
       const fixture = s.fixtures[0]
