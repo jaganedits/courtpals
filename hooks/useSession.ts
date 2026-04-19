@@ -209,18 +209,48 @@ export function sessionReducer(state: DaySession, action: SessionAction): DaySes
 
     case 'FINISH_FIXTURE': {
       const { fixtureId, scoreA, scoreB, winnerId } = action.payload
-      const fixtures = state.fixtures.map(f =>
-        f.id === fixtureId
-          ? { ...f, status: 'done' as const, scoreA, scoreB, winnerId }
-          : f
+      const updated = state.fixtures.map(f =>
+        f.id === fixtureId ? { ...f, status: 'done' as const, scoreA, scoreB, winnerId } : f,
       )
-      const allDone = fixtures.every(f => f.status === 'done')
-      return {
-        ...state,
-        fixtures,
-        activeFixtureId: null,
-        phase: allDone ? 'done' : 'active',
+
+      const rrFixtures = updated.filter(f => f.round === 'rr')
+      const rrDone = rrFixtures.length > 0 && rrFixtures.every(f => f.status === 'done')
+      const hasPlayoffs = updated.some(f => f.round !== 'rr')
+
+      if (rrDone && !hasPlayoffs) {
+        const ranked = rankStandings(state.teams, updated).map(r => r.team.id)
+        const seed = generatePlayoffSeed(state.teams, ranked)
+        if (seed.length === 0) {
+          return { ...state, fixtures: updated, activeFixtureId: null, phase: 'done' }
+        }
+        return {
+          ...state,
+          fixtures: [...updated, ...seed],
+          activeFixtureId: null,
+          phase: 'playoffs',
+        }
       }
+
+      if (state.phase === 'playoffs') {
+        const semis = updated.filter(f => f.round === 'semi')
+        const hasFinal = updated.some(f => f.round === 'final')
+        if (semis.length === 2 && semis.every(s => s.status === 'done') && !hasFinal) {
+          const finals = generateFinals(semis)
+          return {
+            ...state,
+            fixtures: [...updated, ...finals],
+            activeFixtureId: null,
+            phase: 'playoffs',
+          }
+        }
+        const nonRR = updated.filter(f => f.round !== 'rr')
+        const allPlayoffsDone = nonRR.length > 0 && nonRR.every(f => f.status === 'done')
+        if (allPlayoffsDone) {
+          return { ...state, fixtures: updated, activeFixtureId: null, phase: 'done' }
+        }
+      }
+
+      return { ...state, fixtures: updated, activeFixtureId: null, phase: state.phase }
     }
 
     case 'RESET_SESSION':

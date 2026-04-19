@@ -290,6 +290,113 @@ describe('generatePlayoffSeed', () => {
   })
 })
 
+function playAllRR(state: DaySession): DaySession {
+  let s = state
+  for (const f of s.fixtures.filter(x => x.round === 'rr' && x.status === 'pending')) {
+    s = sessionReducer(s, { type: 'START_FIXTURE', payload: f.id })
+    s = sessionReducer(s, {
+      type: 'FINISH_FIXTURE',
+      payload: { fixtureId: f.id, scoreA: 21, scoreB: 10, winnerId: f.teamAId },
+    })
+  }
+  return s
+}
+
+function setupSession(playerCount: number): DaySession {
+  let s = initialSession
+  for (let i = 1; i <= playerCount; i++) {
+    s = sessionReducer(s, {
+      type: 'ADD_PLAYER',
+      payload: { id: `p${i}`, name: `P${i}`, emoji: '🏸' },
+    })
+  }
+  s = sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })
+  s = sessionReducer(s, { type: 'START_SESSION' })
+  return s
+}
+
+describe('phase transitions with playoffs', () => {
+  it('3 teams: last RR finish goes straight to done', () => {
+    let s = setupSession(6) // 2v2 default, 6 players → 3 teams
+    expect(s.teams).toHaveLength(3)
+    s = playAllRR(s)
+    expect(s.phase).toBe('done')
+    expect(s.fixtures.every(f => f.round === 'rr')).toBe(true)
+  })
+
+  it('4 teams: last RR finish seeds Final + 3rd-place', () => {
+    let s = setupSession(8) // 8 players → 4 teams
+    expect(s.teams).toHaveLength(4)
+    s = playAllRR(s)
+    expect(s.phase).toBe('playoffs')
+    const playoffs = s.fixtures.filter(f => f.round !== 'rr')
+    expect(playoffs).toHaveLength(2)
+    expect(playoffs.some(f => f.round === 'final')).toBe(true)
+    expect(playoffs.some(f => f.round === '3rd')).toBe(true)
+  })
+
+  it('4 teams: finishing both playoff fixtures ends the session', () => {
+    let s = setupSession(8)
+    s = playAllRR(s)
+    for (const f of s.fixtures.filter(x => x.round !== 'rr' && x.status === 'pending')) {
+      s = sessionReducer(s, { type: 'START_FIXTURE', payload: f.id })
+      s = sessionReducer(s, {
+        type: 'FINISH_FIXTURE',
+        payload: { fixtureId: f.id, scoreA: 21, scoreB: 15, winnerId: f.teamAId },
+      })
+    }
+    expect(s.phase).toBe('done')
+  })
+
+  it('6 teams: last RR finish spawns two semis only', () => {
+    let s = setupSession(12) // 12 players → 6 teams
+    expect(s.teams).toHaveLength(6)
+    s = playAllRR(s)
+    expect(s.phase).toBe('playoffs')
+    const semis = s.fixtures.filter(f => f.round === 'semi')
+    expect(semis).toHaveLength(2)
+    expect(s.fixtures.some(f => f.round === 'final')).toBe(false)
+    expect(s.fixtures.some(f => f.round === '3rd')).toBe(false)
+  })
+
+  it('6 teams: finishing both semis appends Final + 3rd-place', () => {
+    let s = setupSession(12)
+    s = playAllRR(s)
+    for (const semi of s.fixtures.filter(f => f.round === 'semi')) {
+      s = sessionReducer(s, { type: 'START_FIXTURE', payload: semi.id })
+      s = sessionReducer(s, {
+        type: 'FINISH_FIXTURE',
+        payload: { fixtureId: semi.id, scoreA: 21, scoreB: 15, winnerId: semi.teamAId },
+      })
+    }
+    expect(s.phase).toBe('playoffs')
+    expect(s.fixtures.some(f => f.round === 'final')).toBe(true)
+    expect(s.fixtures.some(f => f.round === '3rd')).toBe(true)
+  })
+
+  it('6 teams: finishing Final + 3rd ends the session', () => {
+    let s = setupSession(12)
+    s = playAllRR(s)
+    // play semis
+    for (const semi of s.fixtures.filter(f => f.round === 'semi')) {
+      s = sessionReducer(s, { type: 'START_FIXTURE', payload: semi.id })
+      s = sessionReducer(s, {
+        type: 'FINISH_FIXTURE',
+        payload: { fixtureId: semi.id, scoreA: 21, scoreB: 15, winnerId: semi.teamAId },
+      })
+    }
+    // play final + 3rd
+    for (const f of s.fixtures.filter(x => (x.round === 'final' || x.round === '3rd') && x.status === 'pending')) {
+      s = sessionReducer(s, { type: 'START_FIXTURE', payload: f.id })
+      s = sessionReducer(s, {
+        type: 'FINISH_FIXTURE',
+        payload: { fixtureId: f.id, scoreA: 21, scoreB: 15, winnerId: f.teamAId },
+      })
+    }
+    expect(s.phase).toBe('done')
+  })
+})
+
 describe('generateFinals', () => {
   it('pairs semi winners → Final, semi losers → 3rd-place', () => {
     const semi1: Fixture = {
