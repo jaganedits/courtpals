@@ -43,7 +43,10 @@ export function firebaseAuth(): Auth | null {
 export function firestore(): Firestore | null {
   const app = getOrInit()
   if (!app) return null
-  if (!_db) _db = getFirestore(app)
+  if (!_db) {
+    const dbId = process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_DATABASE_ID
+    _db = dbId && dbId !== '(default)' ? getFirestore(app, dbId) : getFirestore(app)
+  }
   return _db
 }
 
