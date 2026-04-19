@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import { isFirebaseConfigured } from '@/lib/firebase'
+import { clearCourtPalsStorage, clearFirestoreIndexedDb } from '@/lib/local-cache'
 import { useAuth } from '@/hooks/useAuth'
 import { useCourt } from '@/hooks/useCourt'
 import { computePlayerStats, recentSessionsForPlayer } from '@/lib/player-stats'
@@ -685,12 +686,22 @@ function FirebaseProfileDialogContent({
             variant="ghost"
             size="sm"
             onClick={async () => {
-              // Don't touch /users/{uid}.playerId on sign-out — we want the
-              // player linkage restored automatically on next sign-in, and
-              // the write would race with auth.signOut and throw
-              // permission-denied against the auth-less request.
+              // Full-cleanup sign-out: leave the court, clear every
+              // courtpals_* key from both storages, nuke the Firestore
+              // IndexedDB cache, sign out from Firebase, then reload so
+              // no React / reducer state lingers.
               onClose()
+              try {
+                if (court.court) {
+                  await court.leaveCourt()
+                }
+              } catch (e) {
+                console.warn('[courtpals] leaveCourt on sign-out failed:', e)
+              }
               await auth.signOut()
+              clearCourtPalsStorage()
+              await clearFirestoreIndexedDb()
+              if (typeof window !== 'undefined') window.location.reload()
             }}
             className={cn('gap-2 text-destructive hover:text-destructive')}
           >

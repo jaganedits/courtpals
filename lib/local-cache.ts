@@ -68,3 +68,35 @@ export function clearCourtPalsStorage() {
   drop(localStorage)
   drop(sessionStorage)
 }
+
+/**
+ * Best-effort clear of the Firestore IndexedDB cache that
+ * initializeFirestore(..., { localCache: persistentLocalCache() }) writes
+ * on every reload. We don't know the internal database name statically so
+ * we enumerate indexedDB and drop anything that looks firestore-related.
+ */
+export async function clearFirestoreIndexedDb(): Promise<void> {
+  if (typeof window === 'undefined') return
+  const anyIdb = indexedDB as IDBFactory & {
+    databases?: () => Promise<IDBDatabaseInfo[]>
+  }
+  if (!anyIdb?.databases) return
+  try {
+    const dbs = await anyIdb.databases()
+    await Promise.allSettled(
+      dbs
+        .filter(db => db.name && /firestore/i.test(db.name))
+        .map(
+          db =>
+            new Promise<void>(resolve => {
+              const req = indexedDB.deleteDatabase(db.name!)
+              req.onsuccess = () => resolve()
+              req.onerror = () => resolve()
+              req.onblocked = () => resolve()
+            }),
+        ),
+    )
+  } catch {
+    // Non-fatal — browsers without indexedDB.databases() will just skip.
+  }
+}
