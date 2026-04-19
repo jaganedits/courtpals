@@ -1,4 +1,5 @@
 export type WinTarget = 11 | 15 | 21 | 25
+export type TeamSize = 1 | 2
 
 export interface SessionPlayer {
   id: string
@@ -14,6 +15,8 @@ export interface SessionTeam {
 
 export type FixtureStatus = 'pending' | 'active' | 'done'
 
+export type Round = 'rr' | 'semi' | 'final' | '3rd'
+
 export interface Fixture {
   id: string
   teamAId: string
@@ -22,14 +25,16 @@ export interface Fixture {
   scoreA: number
   scoreB: number
   winnerId: string | null
+  round: Round
 }
 
-export type SessionPhase = 'setup' | 'active' | 'done'
+export type SessionPhase = 'setup' | 'active' | 'playoffs' | 'done'
 
 export interface DaySession {
   id: string
   date: number
   winTarget: WinTarget
+  teamSize: TeamSize
   players: SessionPlayer[]
   teams: SessionTeam[]
   fixtures: Fixture[]
@@ -42,6 +47,7 @@ export type SessionAction =
   | { type: 'REMOVE_PLAYER'; payload: string }
   | { type: 'UPDATE_PLAYER'; payload: SessionPlayer }
   | { type: 'SET_WIN_TARGET'; payload: WinTarget }
+  | { type: 'SET_TEAM_SIZE'; payload: TeamSize }
   | { type: 'AUTO_SPLIT_TEAMS' }
   | { type: 'ASSIGN_PLAYER_TO_TEAM'; payload: { playerId: string; teamId: string } }
   | { type: 'START_SESSION' }
@@ -81,6 +87,7 @@ export interface SavedSession {
   id: string
   date: number
   winTarget: WinTarget
+  teamSize: TeamSize
   teams: SessionTeam[]
   fixtures: Fixture[]
 }
