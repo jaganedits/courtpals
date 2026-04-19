@@ -88,6 +88,7 @@ export type MatchAction =
   | { type: 'ADD_POINT'; payload: TeamIndex }
   | { type: 'UNDO' }
   | { type: 'RESET' }
+  | { type: 'HYDRATE'; payload: MatchState }
 
 export interface SavedSession {
   id: string

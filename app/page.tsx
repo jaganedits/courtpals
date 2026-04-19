@@ -218,6 +218,8 @@ export default function Page() {
             dispatch={sessionDispatch}
             onStartFixture={handleStartFixture}
             onSaveSession={handleSaveSession}
+            match={match}
+            onOpenScoreboard={() => setTab('score')}
           />
         )}
         {tab === 'players' && (

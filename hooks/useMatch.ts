@@ -1,7 +1,9 @@
 'use client'
 
-import { useReducer } from 'react'
+import { useEffect, useReducer } from 'react'
 import type { MatchState, MatchAction } from '@/types'
+
+const STORAGE_KEY = 'courtpals_match'
 
 export const initialMatchState: MatchState = {
   fixtureId: null,
@@ -58,12 +60,49 @@ export function matchReducer(state: MatchState, action: MatchAction): MatchState
     case 'RESET':
       return initialMatchState
 
+    case 'HYDRATE':
+      return action.payload
+
     default:
       return state
   }
 }
 
+function loadPersisted(): MatchState | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? (JSON.parse(raw) as MatchState) : null
+  } catch {
+    return null
+  }
+}
+
 export function useMatch() {
   const [state, dispatch] = useReducer(matchReducer, initialMatchState)
+
+  // Hydrate persisted match on mount so an in-progress scoreboard survives
+  // refresh / tab close.
+  useEffect(() => {
+    const persisted = loadPersisted()
+    if (persisted && persisted.phase !== 'idle' && persisted.fixtureId) {
+      dispatch({ type: 'HYDRATE', payload: persisted })
+    }
+  }, [])
+
+  // Mirror to localStorage on every change. Idle state clears the key.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (state.phase === 'idle') {
+      localStorage.removeItem(STORAGE_KEY)
+      return
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    } catch {
+      // non-fatal
+    }
+  }, [state])
+
   return { state, dispatch }
 }

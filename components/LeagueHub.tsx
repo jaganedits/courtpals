@@ -6,6 +6,7 @@ import DaySetup from './DaySetup'
 import TeamBuilder from './TeamBuilder'
 import FixtureList from './FixtureList'
 import Standings from './Standings'
+import LiveMatchBanner from './LiveMatchBanner'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,7 +28,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
-import type { DaySession, SessionAction, SessionPlayer } from '@/types'
+import type { DaySession, MatchState, SessionAction, SessionPlayer } from '@/types'
 
 type LeagueView = 'checkin' | 'teams' | 'fixtures' | 'standings'
 
@@ -39,6 +40,8 @@ interface Props {
   dispatch: React.Dispatch<SessionAction>
   onStartFixture: (fixtureId: string) => void
   onSaveSession: () => void
+  match?: MatchState
+  onOpenScoreboard?: () => void
 }
 
 export default function LeagueHub({
@@ -49,6 +52,8 @@ export default function LeagueHub({
   dispatch,
   onStartFixture,
   onSaveSession,
+  match,
+  onOpenScoreboard,
 }: Props) {
   const [view, setView] = useState<LeagueView>(() =>
     session.phase === 'setup'
@@ -185,6 +190,12 @@ export default function LeagueHub({
 
   return (
     <div className="flex flex-col">
+      {match && onOpenScoreboard && (match.phase === 'playing' || match.phase === 'finished') && (
+        <div className="px-4 pt-4 lg:px-6">
+          <LiveMatchBanner match={match} onOpen={onOpenScoreboard} />
+        </div>
+      )}
+
       {isScheduled && (
         <div className="mx-4 mt-4 flex flex-col gap-3 rounded-2xl border-2 border-primary/40 bg-primary/10 p-4 lg:mx-6 lg:flex-row lg:items-center">
           <div className="flex items-start gap-3">
