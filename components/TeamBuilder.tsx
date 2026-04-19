@@ -282,7 +282,7 @@ export default function TeamBuilder({ teams, teamSize, dispatch, onReRandomize, 
         size="lg"
         onClick={onStartSession}
         disabled={teams.length < 2}
-        className="sticky bottom-[calc(env(safe-area-inset-bottom)+72px)] z-30 h-auto justify-between rounded-2xl border-2 border-primary px-5 py-4 shadow-brut active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:shadow-none disabled:border-border"
+        className="sticky bottom-[calc(env(safe-area-inset-bottom)+72px)] z-30 h-auto justify-between rounded-2xl border-2 border-primary px-5 py-4 shadow-brut active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:shadow-none disabled:border-border lg:static lg:ml-auto lg:max-w-sm lg:py-3"
       >
         <span className="flex flex-col items-start leading-none">
           <span className="font-display text-xs font-bold uppercase tracking-[0.18em] opacity-70">
