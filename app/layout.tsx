@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from 'next'
-import { Bricolage_Grotesque, Plus_Jakarta_Sans, JetBrains_Mono, Geist } from 'next/font/google'
+import { Bricolage_Grotesque, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
-import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+import { cn } from '@/lib/utils'
 
 const display = Bricolage_Grotesque({
   variable: '--font-display',
@@ -42,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={cn("h-full", "antialiased", display.variable, body.variable, mono.variable, "font-sans", geist.variable)}
+      className={cn('h-full antialiased', display.variable, body.variable, mono.variable)}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

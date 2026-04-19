@@ -1,10 +1,13 @@
 export type WinTarget = 11 | 15 | 21 | 25
 export type TeamSize = 1 | 2
 
+export type PlayerRating = 1 | 2 | 3 | 4 | 5
+
 export interface SessionPlayer {
   id: string
   name: string
   emoji: string
+  rating: PlayerRating
 }
 
 export interface SessionTeam {

@@ -1,0 +1,66 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 🏸
+      - generic [ref=e7]:
+        - generic [ref=e8]: saturday league
+        - generic [ref=e9]: CourtPals
+    - generic [ref=e11]:
+      - tablist [ref=e14]:
+        - tab "Check-in" [selected] [ref=e15]
+        - tab "Teams" [ref=e16]
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - paragraph [ref=e19]: saturday check-in
+          - heading "Who's playing?" [level=1] [ref=e20]
+          - paragraph [ref=e21]: Tap your regulars who showed up today.
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - generic [ref=e25]: "00"
+            - generic [ref=e26]: in
+          - generic [ref=e27]:
+            - generic [ref=e28]: "00"
+            - generic [ref=e29]: teams
+          - generic [ref=e30]:
+            - generic [ref=e31]: "00"
+            - generic [ref=e32]: matches
+        - generic [ref=e33]:
+          - paragraph [ref=e34]: First to
+          - group [ref=e35]:
+            - radio "First to 11" [ref=e36]:
+              - generic [ref=e37]: "11"
+              - generic [ref=e38]: points
+            - radio "First to 15" [ref=e39]:
+              - generic [ref=e40]: "15"
+              - generic [ref=e41]: points
+            - radio "First to 21" [checked] [ref=e42]:
+              - generic [ref=e43]: "21"
+              - generic [ref=e44]: points
+            - radio "First to 25" [ref=e45]:
+              - generic [ref=e46]: "25"
+              - generic [ref=e47]: points
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - img
+          - generic [ref=e51]: Your roster is empty
+          - generic [ref=e52]: Head to the Roster tab and add your regulars first.
+    - navigation [ref=e53]:
+      - list [ref=e55]:
+        - listitem [ref=e56]:
+          - button "League" [ref=e57]:
+            - img
+            - generic [ref=e58]: League
+        - listitem [ref=e59]:
+          - button "Roster" [ref=e60]:
+            - img
+            - generic [ref=e61]: Roster
+        - listitem [ref=e62]:
+          - button "Score" [disabled]:
+            - img
+            - generic: Score
+        - listitem [ref=e63]:
+          - button "History" [ref=e64]:
+            - img
+            - generic [ref=e65]: History
+  - button "Open Next.js Dev Tools" [ref=e71] [cursor=pointer]:
+    - img [ref=e72]

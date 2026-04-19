@@ -1,0 +1,85 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]: 🏸
+        - generic [ref=e7]:
+          - generic [ref=e8]: saturday league
+          - generic [ref=e9]: CourtPals
+      - generic [ref=e75]: Sat, Apr 18
+    - generic [ref=e11]:
+      - tablist [ref=e14]:
+        - tab "Check-in" [selected] [ref=e15]
+        - tab "Teams" [ref=e16]
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - paragraph [ref=e19]: saturday check-in
+          - heading "Who's playing?" [level=1] [ref=e20]
+          - paragraph [ref=e21]: Tap your regulars who showed up today.
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - generic [ref=e25]: "01"
+            - generic [ref=e26]: in
+          - generic [ref=e27]:
+            - generic [ref=e28]: "01"
+            - generic [ref=e29]: teams
+          - generic [ref=e30]:
+            - generic [ref=e31]: "00"
+            - generic [ref=e32]: matches
+        - generic [ref=e33]:
+          - paragraph [ref=e34]: First to
+          - group [ref=e35]:
+            - radio "First to 11" [ref=e36]:
+              - generic [ref=e37]: "11"
+              - generic [ref=e38]: points
+            - radio "First to 15" [ref=e39]:
+              - generic [ref=e40]: "15"
+              - generic [ref=e41]: points
+            - radio "First to 21" [checked] [ref=e42]:
+              - generic [ref=e43]: "21"
+              - generic [ref=e44]: points
+            - radio "First to 25" [ref=e45]:
+              - generic [ref=e46]: "25"
+              - generic [ref=e47]: points
+        - generic [ref=e76]:
+          - paragraph [ref=e77]: tap to check in
+          - button "🏸 Alice" [ref=e78] [cursor=pointer]:
+            - generic [ref=e79]:
+              - generic [ref=e81]: 🏸
+              - generic [ref=e82]: Alice
+              - img [ref=e84]
+          - button "🏸 Bob" [pressed] [ref=e86] [cursor=pointer]:
+            - generic [ref=e87]:
+              - generic [ref=e89]: 🏸
+              - generic [ref=e90]: Bob
+              - img [ref=e92]
+          - button "🏸 Carol" [ref=e94] [cursor=pointer]:
+            - generic [ref=e95]:
+              - generic [ref=e97]: 🏸
+              - generic [ref=e98]: Carol
+              - img [ref=e100]
+          - button "🏸 Dan" [ref=e102] [cursor=pointer]:
+            - generic [ref=e103]:
+              - generic [ref=e105]: 🏸
+              - generic [ref=e106]: Dan
+              - img [ref=e108]
+        - generic [ref=e112]: need 1 more player
+    - navigation [ref=e53]:
+      - list [ref=e55]:
+        - listitem [ref=e56]:
+          - button "League" [ref=e57]:
+            - img
+            - generic [ref=e58]: League
+        - listitem [ref=e59]:
+          - button "Roster" [ref=e60]:
+            - img
+            - generic [ref=e61]: Roster
+        - listitem [ref=e62]:
+          - button "Score" [disabled]:
+            - img
+            - generic: Score
+        - listitem [ref=e63]:
+          - button "History" [ref=e64]:
+            - img
+            - generic [ref=e65]: History
+  - alert [ref=e113]

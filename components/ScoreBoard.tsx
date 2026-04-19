@@ -1,27 +1,44 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { Undo2, X, Timer } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { cn } from '@/lib/utils'
 import type { MatchState, MatchAction, TeamIndex } from '@/types'
 
 const SIDES: {
   idx: TeamIndex
-  bg: string
   accent: string
-  ring: string
   gradient: string
 }[] = [
   {
     idx: 0,
-    bg: 'bg-[var(--color-card)]',
     accent: 'var(--color-team-a)',
-    ring: 'shadow-[0_0_0_2px_var(--color-team-a),inset_0_0_0_1px_rgba(255,122,69,0.25)]',
     gradient: 'linear-gradient(135deg, rgba(255,122,69,0.18), rgba(255,122,69,0.04))',
   },
   {
     idx: 1,
-    bg: 'bg-[var(--color-card)]',
     accent: 'var(--color-team-b)',
-    ring: 'shadow-[0_0_0_2px_var(--color-team-b),inset_0_0_0_1px_rgba(61,220,151,0.25)]',
     gradient: 'linear-gradient(225deg, rgba(61,220,151,0.18), rgba(61,220,151,0.04))',
   },
 ]
@@ -44,7 +61,6 @@ export default function ScoreBoard({ state, dispatch }: Props) {
         const el = bumpRefs[i].current
         if (!el) continue
         el.classList.remove('animate-score-bump')
-        // force reflow
         void el.offsetWidth
         el.classList.add('animate-score-bump')
       }
@@ -53,14 +69,18 @@ export default function ScoreBoard({ state, dispatch }: Props) {
 
   if (isIdle) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 py-12 text-center">
-        <p className="text-5xl mb-4">🏸</p>
-        <p className="font-display text-lg font-extrabold text-[var(--color-chalk)]">
-          No match in play
-        </p>
-        <p className="mt-2 text-sm text-[var(--color-ink-soft)] max-w-xs">
-          Head to the League tab and tap a fixture to start scoring.
-        </p>
+      <div className="flex min-h-[70vh] items-center px-4 py-12">
+        <Empty className="mx-auto max-w-sm border-2">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Timer />
+            </EmptyMedia>
+            <EmptyTitle className="font-display text-lg font-extrabold">No match in play</EmptyTitle>
+            <EmptyDescription>
+              Head to the League tab and tap a fixture to start scoring.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       </div>
     )
   }
@@ -70,113 +90,131 @@ export default function ScoreBoard({ state, dispatch }: Props) {
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-6 pb-8">
-      {/* Match ribbon */}
-      <div className="flex items-center justify-between rounded-xl border-2 border-[var(--color-line)] bg-[var(--color-card)] px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-[var(--color-lime)]/15 px-2 py-0.5 font-display text-[9px] font-extrabold uppercase tracking-[0.2em] text-[var(--color-lime)]">
-            {isPlaying ? 'live' : 'final'}
-          </span>
-          <span className="font-display text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-ink-soft)]">
-            first to {state.winTarget}
-          </span>
-        </div>
-        <MatchTimer startTime={state.startTime} endTime={state.endTime} running={isPlaying} />
-      </div>
+      <Card className="py-2">
+        <CardContent className="flex items-center justify-between px-3 py-1">
+          <div className="flex items-center gap-2">
+            <Badge className={cn('font-display text-[9px] uppercase tracking-[0.2em]', isPlaying && 'animate-live')}>
+              {isPlaying ? 'live' : 'final'}
+            </Badge>
+            <span className="font-display text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+              first to {state.winTarget}
+            </span>
+          </div>
+          <MatchTimer startTime={state.startTime} endTime={state.endTime} running={isPlaying} />
+        </CardContent>
+      </Card>
 
-      {/* Score tap cards */}
       <div className="grid grid-cols-2 gap-2.5">
         {([0, 1] as TeamIndex[]).map(ti => {
           const side = SIDES[ti]
           const isLeader = leading === ti
           return (
-            <button
+            <Card
               key={ti}
-              disabled={!isPlaying}
-              onClick={() => dispatch({ type: 'ADD_POINT', payload: ti })}
-              className={`group relative flex aspect-[3/4] flex-col items-center justify-between overflow-hidden rounded-2xl border-2 p-4 text-center transition-all ${side.bg} ${
-                isLeader ? side.ring : 'border-[var(--color-line)]'
-              } ${!isPlaying ? 'opacity-70' : 'active:scale-[0.97]'}`}
-              style={{ borderColor: isLeader ? side.accent : undefined, backgroundImage: side.gradient }}
-            >
-              {/* Header */}
-              <div className="flex w-full flex-col items-center">
-                <span className="text-4xl leading-none">{state.teamEmojis[ti]}</span>
-                <span className="mt-2 max-w-full truncate font-display text-xs font-extrabold uppercase tracking-[0.14em]" style={{ color: side.accent }}>
-                  {state.teamNames[ti]}
-                </span>
-              </div>
-
-              {/* Score */}
-              <span
-                ref={bumpRefs[ti]}
-                className="font-score text-[96px] font-extrabold leading-none tabular text-[var(--color-chalk)]"
-                style={{ textShadow: `0 0 40px color-mix(in srgb, ${side.accent} 30%, transparent)` }}
-              >
-                {state.scores[ti]}
-              </span>
-
-              {/* Footer hint */}
-              {isPlaying ? (
-                <span className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-ink-dim)] group-active:text-[var(--color-chalk)]">
-                  tap to score
-                </span>
-              ) : (
-                <span className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-ink-dim)]">
-                  final
-                </span>
+              role="button"
+              aria-disabled={!isPlaying}
+              onClick={() => isPlaying && dispatch({ type: 'ADD_POINT', payload: ti })}
+              className={cn(
+                'relative aspect-[3/4] cursor-pointer overflow-hidden border-2 py-0 text-center transition-all',
+                isPlaying ? 'active:scale-[0.97]' : 'cursor-default opacity-70',
               )}
+              style={{
+                borderColor: isLeader ? side.accent : undefined,
+                backgroundImage: side.gradient,
+                boxShadow: isLeader ? `0 0 0 2px ${side.accent}, 0 0 24px -4px ${side.accent}80` : undefined,
+              }}
+            >
+              <CardContent className="flex h-full flex-col items-center justify-between p-4">
+                <div className="flex w-full flex-col items-center gap-2">
+                  <span className="text-4xl leading-none">{state.teamEmojis[ti]}</span>
+                  <span
+                    className="font-display max-w-full truncate text-xs font-extrabold uppercase tracking-[0.14em]"
+                    style={{ color: side.accent }}
+                  >
+                    {state.teamNames[ti]}
+                  </span>
+                </div>
 
-              {/* Decorative court-line corner */}
+                <span
+                  ref={bumpRefs[ti]}
+                  className="font-score text-[96px] font-extrabold leading-none tabular"
+                  style={{ textShadow: `0 0 40px color-mix(in srgb, ${side.accent} 30%, transparent)` }}
+                >
+                  {state.scores[ti]}
+                </span>
+
+                <Badge variant="outline" className="font-display text-[10px] uppercase tracking-[0.2em]">
+                  {isPlaying ? 'tap to score' : 'final'}
+                </Badge>
+              </CardContent>
+
               <span
                 aria-hidden
-                className="pointer-events-none absolute -top-6 -right-6 h-16 w-16 rounded-full opacity-40"
+                className="pointer-events-none absolute -top-6 -right-6 size-16 rounded-full opacity-40"
                 style={{ background: `radial-gradient(circle, ${side.accent}, transparent 70%)` }}
               />
-            </button>
+            </Card>
           )
         })}
       </div>
 
-      {/* Action row */}
       <div className="grid grid-cols-2 gap-2.5">
-        <button
+        <Button
+          variant="outline"
+          size="lg"
           onClick={() => dispatch({ type: 'UNDO' })}
           disabled={state.events.length === 0 || !isPlaying}
-          className="flex items-center justify-center gap-2 rounded-xl border-2 border-[var(--color-line)] bg-[var(--color-card)] py-3 font-display text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-ink-soft)] transition-all disabled:cursor-not-allowed disabled:opacity-30 hover:border-[var(--color-lime)]/40 hover:text-[var(--color-chalk)] active:scale-[0.98]"
+          className="h-auto py-3 font-display text-xs font-bold uppercase tracking-[0.16em]"
         >
-          <span className="text-base">↩</span>
+          <Undo2 data-icon="inline-start" />
           Undo
-        </button>
-        <button
-          onClick={() => {
-            if (confirm('Abandon this match? Scores will be lost.')) {
-              dispatch({ type: 'RESET' })
-            }
-          }}
-          className="flex items-center justify-center gap-2 rounded-xl border-2 border-[var(--color-line)] bg-[var(--color-card)] py-3 font-display text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-ink-soft)] transition-all hover:border-[var(--color-loss)]/40 hover:text-[var(--color-loss)] active:scale-[0.98]"
-        >
-          <span className="text-base">✕</span>
-          Abandon
-        </button>
+        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-auto py-3 font-display text-xs font-bold uppercase tracking-[0.16em] hover:text-destructive hover:border-destructive/40"
+            >
+              <X data-icon="inline-start" />
+              Abandon
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="font-display">Abandon this match?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Scores will be lost and the fixture will remain pending.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep playing</AlertDialogCancel>
+              <AlertDialogAction onClick={() => dispatch({ type: 'RESET' })}>
+                Abandon match
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
-      {/* Recent points trail */}
       {state.events.length > 0 && (
-        <section>
-          <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-ink-dim)] mb-2 px-1">
+        <section className="flex flex-col gap-2">
+          <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground px-1">
             rally log
           </p>
           <div className="flex flex-wrap gap-1">
             {state.events.slice(-16).map(ev => (
-              <span
+              <Badge
                 key={ev.id}
-                className="rounded-md border border-[var(--color-line)] bg-[var(--color-card)] px-1.5 py-0.5 font-score text-[10px] font-bold tabular"
+                variant="outline"
+                className="font-score text-[10px] font-bold tabular"
                 style={{
                   color: ev.team === 0 ? 'var(--color-team-a)' : 'var(--color-team-b)',
+                  borderColor: 'var(--border)',
                 }}
               >
                 {ev.scoreAfter[0]}–{ev.scoreAfter[1]}
-              </span>
+              </Badge>
             ))}
           </div>
         </section>
@@ -212,10 +250,7 @@ function MatchTimer({
   }, [startTime, endTime, running])
 
   return (
-    <span
-      ref={ref}
-      className="font-score text-xs font-bold tabular text-[var(--color-ink-soft)]"
-    >
+    <span ref={ref} className="font-score text-xs font-bold tabular text-muted-foreground">
       00:00
     </span>
   )

@@ -1,6 +1,29 @@
 'use client'
 
 import { useState } from 'react'
+import { ChevronLeft, ChevronRight, Calendar, Trophy } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { cn } from '@/lib/utils'
 import type { SavedSession, SessionTeam, Fixture } from '@/types'
 
 interface Props {
@@ -90,135 +113,125 @@ export default function HistoryCalendar({ history, onClearHistory }: Props) {
 
   return (
     <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
-      {/* Header */}
       <header className="flex items-baseline justify-between">
         <div>
-          <p className="font-display text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-ink-dim)]">
+          <p className="font-display text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
             the archive
           </p>
-          <h1 className="font-display text-3xl font-extrabold leading-none text-[var(--color-chalk)]">
-            History
-          </h1>
+          <h1 className="font-display text-3xl font-extrabold leading-none">History</h1>
         </div>
         {history.length > 0 && (
-          <button
-            onClick={() => {
-              if (confirm('Clear all saved sessions? This cannot be undone.')) onClearHistory()
-            }}
-            className="font-display text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-loss)] transition-opacity hover:opacity-70"
-          >
-            Clear all
-          </button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                Clear all
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-display">Clear all sessions?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Every archived Saturday will be deleted. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onClearHistory}>Clear history</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </header>
 
-      {/* Month nav */}
-      <div className="flex items-center justify-between rounded-2xl border-2 border-[var(--color-line)] bg-[var(--color-card)] px-2 py-2">
-        <button
-          onClick={prevMonth}
-          aria-label="Previous month"
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-xl text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-chalk)]"
-        >
-          ‹
-        </button>
-        <div className="flex flex-col items-center">
-          <span className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-ink-dim)]">
-            {year}
-          </span>
-          <span className="font-display text-lg font-extrabold leading-tight text-[var(--color-chalk)]">
-            {monthName}
-          </span>
-        </div>
-        <button
-          onClick={nextMonth}
-          aria-label="Next month"
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-xl text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-chalk)]"
-        >
-          ›
-        </button>
-      </div>
-
-      {/* Calendar grid */}
-      <div className="rounded-2xl border-2 border-[var(--color-line)] bg-[var(--color-card)] p-3">
-        <div className="mb-2 grid grid-cols-7 gap-1 text-center">
-          {DAY_HEADERS.map((d, i) => (
-            <span
-              key={i}
-              className="font-display text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--color-ink-dim)]"
-            >
-              {d}
+      <Card className="py-2">
+        <CardContent className="flex items-center justify-between px-2 py-0">
+          <Button variant="ghost" size="icon" onClick={prevMonth} aria-label="Previous month">
+            <ChevronLeft />
+          </Button>
+          <div className="flex flex-col items-center">
+            <span className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              {year}
             </span>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-1">
-          {cells.map((day, i) => {
-            if (!day) return <div key={`empty-${i}`} aria-hidden />
-            const key = `${year}-${month}-${day}`
-            const hasSessions = Boolean(sessionsByDay[key])
-            const sessionCount = sessionsByDay[key]?.length ?? 0
-            const isToday =
-              day === today.getDate() &&
-              month === today.getMonth() &&
-              year === today.getFullYear()
-            const isSelected = selectedKey === key
+            <span className="font-display text-lg font-extrabold leading-tight">{monthName}</span>
+          </div>
+          <Button variant="ghost" size="icon" onClick={nextMonth} aria-label="Next month">
+            <ChevronRight />
+          </Button>
+        </CardContent>
+      </Card>
 
-            return (
-              <button
-                key={key}
-                onClick={() => setSelectedKey(isSelected ? null : key)}
-                className={`relative flex aspect-square flex-col items-center justify-center rounded-xl border transition-all ${
-                  isSelected
-                    ? 'border-[var(--color-lime)] bg-[var(--color-lime)]/15'
-                    : hasSessions
-                    ? 'border-[var(--color-line)] bg-[var(--color-bg-raised)]'
-                    : 'border-transparent hover:bg-[var(--color-bg-raised)]/50'
-                }`}
+      <Card>
+        <CardContent className="p-3">
+          <div className="mb-2 grid grid-cols-7 gap-1 text-center">
+            {DAY_HEADERS.map((d, i) => (
+              <span
+                key={i}
+                className="font-display text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground"
               >
-                <span
-                  className={`font-score text-sm tabular ${
-                    isToday && !isSelected
-                      ? 'font-extrabold text-[var(--color-lime)]'
-                      : isSelected
-                      ? 'font-extrabold text-[var(--color-lime)]'
-                      : hasSessions
-                      ? 'font-bold text-[var(--color-chalk)]'
-                      : 'font-medium text-[var(--color-ink-soft)]'
-                  }`}
-                >
-                  {day}
-                </span>
-                {hasSessions && (
-                  <span
-                    className={`mt-0.5 flex items-center gap-0.5`}
-                    aria-label={`${sessionCount} ${sessionCount === 1 ? 'session' : 'sessions'}`}
-                  >
-                    {Array.from({ length: Math.min(sessionCount, 3) }).map((_, di) => (
-                      <span
-                        key={di}
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{
-                          background: isSelected ? 'var(--color-lime)' : 'var(--color-team-a)',
-                        }}
-                      />
-                    ))}
-                  </span>
-                )}
-                {isToday && !isSelected && (
-                  <span
-                    aria-hidden
-                    className="absolute inset-1 rounded-lg ring-1 ring-[var(--color-lime)]/40"
-                  />
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </div>
+                {d}
+              </span>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {cells.map((day, i) => {
+              if (!day) return <div key={`empty-${i}`} aria-hidden />
+              const key = `${year}-${month}-${day}`
+              const hasSessions = Boolean(sessionsByDay[key])
+              const sessionCount = sessionsByDay[key]?.length ?? 0
+              const isToday =
+                day === today.getDate() &&
+                month === today.getMonth() &&
+                year === today.getFullYear()
+              const isSelected = selectedKey === key
 
-      {/* Selected day details */}
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSelectedKey(isSelected ? null : key)}
+                  className={cn(
+                    'relative flex aspect-square flex-col items-center justify-center rounded-xl border transition-all',
+                    isSelected
+                      ? 'border-primary bg-primary/15'
+                      : hasSessions
+                      ? 'border-border bg-muted'
+                      : 'border-transparent hover:bg-muted/50',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'font-score text-sm tabular',
+                      isToday && !isSelected && 'font-extrabold text-primary',
+                      isSelected && 'font-extrabold text-primary',
+                      !isSelected && !isToday && hasSessions && 'font-bold text-foreground',
+                      !isSelected && !isToday && !hasSessions && 'font-medium text-muted-foreground',
+                    )}
+                  >
+                    {day}
+                  </span>
+                  {hasSessions && (
+                    <span className="mt-0.5 flex items-center gap-0.5" aria-label={`${sessionCount} sessions`}>
+                      {Array.from({ length: Math.min(sessionCount, 3) }).map((_, di) => (
+                        <span
+                          key={di}
+                          className="size-1.5 rounded-full"
+                          style={{ background: isSelected ? 'var(--primary)' : 'var(--color-team-a)' }}
+                        />
+                      ))}
+                    </span>
+                  )}
+                  {isToday && !isSelected && (
+                    <span aria-hidden className="absolute inset-1 rounded-lg ring-1 ring-primary/40" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       {selectedSessions.length > 0 && (
-        <section className="space-y-3">
-          <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-ink-dim)] px-1">
+        <section className="flex flex-col gap-3">
+          <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-1">
             {new Date(selectedSessions[0].date).toLocaleDateString('default', {
               weekday: 'long',
               month: 'short',
@@ -229,89 +242,82 @@ export default function HistoryCalendar({ history, onClearHistory }: Props) {
             const champion = computeWinner(sess.teams, sess.fixtures)
             const done = sess.fixtures.filter(f => f.status === 'done').length
             return (
-              <article
+              <Card
                 key={sess.id}
                 style={{ animationDelay: `${si * 60}ms` }}
-                className="animate-rise rounded-2xl border-2 border-[var(--color-line)] bg-[var(--color-card)] p-4"
+                className="animate-rise gap-3"
               >
-                {/* Champion banner */}
-                {champion && (
-                  <div className="mb-3 flex items-center gap-3 rounded-xl bg-[var(--color-lime)]/10 px-3 py-2">
-                    <span className="text-2xl">🏆</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-display text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--color-ink-dim)]">
-                        champion
-                      </p>
-                      <p className="truncate font-display text-base font-extrabold text-[var(--color-chalk)]">
-                        {champion.players[0]?.emoji} {champion.name}
-                      </p>
+                <CardContent className="flex flex-col gap-3">
+                  {champion && (
+                    <div className="flex items-center gap-3 rounded-xl bg-primary/10 px-3 py-2">
+                      <Trophy className="size-6 text-primary" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-display text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                          champion
+                        </p>
+                        <p className="truncate font-display text-base font-extrabold">
+                          {champion.name}
+                        </p>
+                      </div>
+                      <Badge className="font-score tabular">1st</Badge>
                     </div>
-                    <span className="font-score text-xl font-extrabold text-[var(--color-lime)] tabular">
-                      1st
-                    </span>
+                  )}
+
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary" className="gap-1">
+                      <span className="font-score font-extrabold tabular">{done}/{sess.fixtures.length}</span>
+                      <span className="font-display text-[10px] uppercase tracking-[0.14em] text-muted-foreground">matches</span>
+                    </Badge>
+                    <Badge variant="secondary" className="gap-1">
+                      <span className="font-score font-extrabold tabular">{sess.winTarget}</span>
+                      <span className="font-display text-[10px] uppercase tracking-[0.14em] text-muted-foreground">first to</span>
+                    </Badge>
+                    <Badge variant="secondary" className="gap-1">
+                      <span className="font-score font-extrabold tabular">{sess.teams.length}</span>
+                      <span className="font-display text-[10px] uppercase tracking-[0.14em] text-muted-foreground">teams</span>
+                    </Badge>
                   </div>
-                )}
 
-                {/* Metadata */}
-                <div className="mb-3 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink-dim)]">
-                  <Meta label="matches" value={`${done}/${sess.fixtures.length}`} />
-                  <Meta label="first to" value={sess.winTarget} />
-                  <Meta label="teams" value={sess.teams.length} />
-                </div>
-
-                {/* Team chips */}
-                <div className="flex flex-wrap gap-1.5">
-                  {sess.teams.map((t, ti) => (
-                    <span
-                      key={t.id}
-                      className="flex items-center gap-1 rounded-full border border-[var(--color-line)] bg-[var(--color-bg-raised)] px-2 py-1"
-                      style={{
-                        boxShadow: `inset 2px 0 0 ${TEAM_COLORS[ti % TEAM_COLORS.length]}`,
-                      }}
-                    >
-                      <span className="text-xs">{t.players[0]?.emoji ?? '🏸'}</span>
-                      <span className="font-display text-[10px] font-bold text-[var(--color-ink-soft)]">
-                        {t.name}
-                      </span>
-                    </span>
-                  ))}
-                </div>
-              </article>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sess.teams.map((t, ti) => (
+                      <Badge
+                        key={t.id}
+                        variant="outline"
+                        className="gap-1"
+                        style={{ boxShadow: `inset 2px 0 0 ${TEAM_COLORS[ti % TEAM_COLORS.length]}` }}
+                      >
+                        <span className="font-display text-[10px] font-bold">{t.name}</span>
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )
           })}
         </section>
       )}
 
       {selectedKey && selectedSessions.length === 0 && (
-        <div className="rounded-2xl border-2 border-dashed border-[var(--color-line)] px-6 py-6 text-center">
-          <p className="font-display text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-ink-dim)]">
+        <div className="rounded-2xl border-2 border-dashed border-border px-6 py-6 text-center">
+          <p className="font-display text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
             no sessions on this day
           </p>
         </div>
       )}
 
       {history.length === 0 && (
-        <div className="rounded-2xl border-2 border-dashed border-[var(--color-line)] px-6 py-10 text-center">
-          <p className="text-3xl mb-2">🗓️</p>
-          <p className="font-display text-sm font-bold text-[var(--color-ink-soft)]">
-            No sessions archived yet
-          </p>
-          <p className="mt-1 text-xs text-[var(--color-ink-dim)]">
-            Play a full Saturday and save the day — it'll show up here.
-          </p>
-        </div>
+        <Empty className="border-2">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Calendar />
+            </EmptyMedia>
+            <EmptyTitle className="font-display font-bold">No sessions archived yet</EmptyTitle>
+            <EmptyDescription>
+              Play a full Saturday and save the day — it&apos;ll show up here.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       )}
     </div>
-  )
-}
-
-function Meta({ label, value }: { label: string; value: string | number }) {
-  return (
-    <span className="inline-flex items-baseline gap-1 rounded-md bg-[var(--color-bg-raised)] px-2 py-1">
-      <span className="font-score text-[11px] font-extrabold text-[var(--color-chalk)] tabular">
-        {value}
-      </span>
-      <span>{label}</span>
-    </span>
   )
 }

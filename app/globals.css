@@ -4,73 +4,162 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
+/* ─── App palette (custom tokens) ──────────────────────────────────── */
+
+:root {
   /* Surfaces — deep court navy */
-  --color-bg: #050d1c;
-  --color-bg-raised: #0a1528;
-  --color-card: #0f1d38;
-  --color-card-raised: #152649;
-  --color-line: #1e3362;
+  --color-bg-raw: #050d1c;
+  --color-bg-raised-raw: #0a1528;
+  --color-card-raw: #0f1d38;
+  --color-card-raised-raw: #152649;
+  --color-line-raw: #1e3362;
 
   /* Ink */
-  --color-ink: #eaf1ff;
-  --color-ink-soft: #a5b4d1;
-  --color-ink-dim: #5f73a0;
+  --color-ink-raw: #eaf1ff;
+  --color-ink-soft-raw: #a5b4d1;
+  --color-ink-dim-raw: #5f73a0;
 
   /* Sport accents */
-  --color-lime: #c7f238;
-  --color-lime-soft: #e8ff94;
+  --color-lime-raw: #c7f238;
+  --color-lime-soft-raw: #e8ff94;
   --color-lime-glow: rgba(199, 242, 56, 0.35);
-  --color-chalk: #f4f8ff;
+  --color-chalk-raw: #f4f8ff;
 
-  /* Team colors — saturated, jersey-like */
-  --color-team-a: #ff7a45;   /* orange kit */
-  --color-team-b: #3ddc97;   /* lime-mint */
-  --color-team-c: #c084fc;   /* violet */
-  --color-team-d: #ff5d8f;   /* pink */
-  --color-team-e: #60a5fa;   /* sky */
-  --color-team-f: #fbbf24;   /* amber */
+  /* Team colors */
+  --color-team-a-raw: #ff7a45;
+  --color-team-b-raw: #3ddc97;
+  --color-team-c-raw: #c084fc;
+  --color-team-d-raw: #ff5d8f;
+  --color-team-e-raw: #60a5fa;
+  --color-team-f-raw: #fbbf24;
 
-  /* Status */
-  --color-win: #3ddc97;
-  --color-loss: #ff6b6b;
-  --color-live: #c7f238;
+  --color-win-raw: #3ddc97;
+  --color-loss-raw: #ff6b6b;
+
+  /* shadcn semantic tokens → navy/lime aesthetic */
+  --background: var(--color-bg-raw);
+  --foreground: var(--color-ink-raw);
+  --card: var(--color-card-raw);
+  --card-foreground: var(--color-ink-raw);
+  --popover: var(--color-card-raised-raw);
+  --popover-foreground: var(--color-ink-raw);
+  --primary: var(--color-lime-raw);
+  --primary-foreground: var(--color-bg-raw);
+  --secondary: var(--color-bg-raised-raw);
+  --secondary-foreground: var(--color-ink-raw);
+  --muted: var(--color-bg-raised-raw);
+  --muted-foreground: var(--color-ink-soft-raw);
+  --accent: var(--color-card-raised-raw);
+  --accent-foreground: var(--color-chalk-raw);
+  --destructive: var(--color-loss-raw);
+  --border: var(--color-line-raw);
+  --input: var(--color-line-raw);
+  --ring: var(--color-lime-raw);
+
+  --chart-1: var(--color-team-a-raw);
+  --chart-2: var(--color-team-b-raw);
+  --chart-3: var(--color-team-c-raw);
+  --chart-4: var(--color-team-d-raw);
+  --chart-5: var(--color-team-e-raw);
+
+  --sidebar: var(--color-bg-raised-raw);
+  --sidebar-foreground: var(--color-ink-raw);
+  --sidebar-primary: var(--color-lime-raw);
+  --sidebar-primary-foreground: var(--color-bg-raw);
+  --sidebar-accent: var(--color-card-raw);
+  --sidebar-accent-foreground: var(--color-chalk-raw);
+  --sidebar-border: var(--color-line-raw);
+  --sidebar-ring: var(--color-lime-raw);
+
+  --radius: 0.875rem;
+}
+
+.dark {
+  --background: var(--color-bg-raw);
+  --foreground: var(--color-ink-raw);
+  --card: var(--color-card-raw);
+  --card-foreground: var(--color-ink-raw);
+  --popover: var(--color-card-raised-raw);
+  --popover-foreground: var(--color-ink-raw);
+  --primary: var(--color-lime-raw);
+  --primary-foreground: var(--color-bg-raw);
+  --secondary: var(--color-bg-raised-raw);
+  --secondary-foreground: var(--color-ink-raw);
+  --muted: var(--color-bg-raised-raw);
+  --muted-foreground: var(--color-ink-soft-raw);
+  --accent: var(--color-card-raised-raw);
+  --accent-foreground: var(--color-chalk-raw);
+  --destructive: var(--color-loss-raw);
+  --border: var(--color-line-raw);
+  --input: var(--color-line-raw);
+  --ring: var(--color-lime-raw);
+}
+
+/* ─── Tailwind token registration ──────────────────────────────────── */
+
+@theme inline {
+  --color-bg: var(--color-bg-raw);
+  --color-bg-raised: var(--color-bg-raised-raw);
+  --color-card-raised: var(--color-card-raised-raw);
+  --color-line: var(--color-line-raw);
+
+  --color-ink: var(--color-ink-raw);
+  --color-ink-soft: var(--color-ink-soft-raw);
+  --color-ink-dim: var(--color-ink-dim-raw);
+
+  --color-lime: var(--color-lime-raw);
+  --color-lime-soft: var(--color-lime-soft-raw);
+  --color-chalk: var(--color-chalk-raw);
+
+  --color-team-a: var(--color-team-a-raw);
+  --color-team-b: var(--color-team-b-raw);
+  --color-team-c: var(--color-team-c-raw);
+  --color-team-d: var(--color-team-d-raw);
+  --color-team-e: var(--color-team-e-raw);
+  --color-team-f: var(--color-team-f-raw);
+
+  --color-win: var(--color-win-raw);
+  --color-loss: var(--color-loss-raw);
 
   /* Fonts */
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-body), system-ui, sans-serif;
   --font-display: var(--font-display), system-ui, sans-serif;
   --font-mono: var(--font-mono), ui-monospace, monospace;
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-foreground: var(--foreground);
+  --font-heading: var(--font-display), system-ui, sans-serif;
+
+  /* shadcn token registration */
   --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card-DEFAULT: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -87,49 +176,50 @@
 
 html,
 body {
-  background: var(--color-bg);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
+  background: var(--color-bg-raw);
+  color: var(--color-ink-raw);
+  font-family: var(--font-body), system-ui, sans-serif;
   overscroll-behavior: none;
 }
 
-/* Court-line pattern — subtle diagonal feather overlay */
 body {
   background-image:
     radial-gradient(ellipse at top, rgba(199, 242, 56, 0.06) 0%, transparent 55%),
     radial-gradient(ellipse at bottom right, rgba(96, 165, 250, 0.08) 0%, transparent 60%),
-    linear-gradient(180deg, var(--color-bg) 0%, #030814 100%);
+    linear-gradient(180deg, var(--color-bg-raw) 0%, #030814 100%);
   background-attachment: fixed;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }
 
 /* ─── Custom utilities ─────────────────────────────────────────────── */
 
-@utility font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
-@utility font-score { font-family: var(--font-mono); font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+@utility font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+@utility font-score {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
 
-/* Brutalist offset shadow */
 @utility shadow-brut {
-  box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(199, 242, 56, 0.0);
+  box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.6);
 }
 @utility shadow-brut-lime {
-  box-shadow: 4px 4px 0 0 var(--color-lime), 0 0 0 1px rgba(199, 242, 56, 0.2);
+  box-shadow: 4px 4px 0 0 var(--color-lime-raw);
 }
 @utility shadow-brut-sm {
   box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.6);
 }
 
-/* Ring-glow for active team */
 @utility ring-lime {
-  box-shadow: 0 0 0 2px var(--color-lime), 0 0 24px -4px var(--color-lime-glow);
-}
-
-/* Court-line decoration */
-@utility court-lines {
-  background-image:
-    linear-gradient(var(--color-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
-  background-size: 48px 48px;
-  background-position: -1px -1px;
+  box-shadow: 0 0 0 2px var(--color-lime-raw), 0 0 24px -4px var(--color-lime-glow);
 }
 
 /* ─── Animations ───────────────────────────────────────────────────── */
@@ -142,21 +232,13 @@ body {
   animation: pulse-live 1.4s ease-in-out infinite;
 }
 
-@keyframes pop-in {
-  0% { opacity: 0; transform: translateY(8px) scale(0.96); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-@utility animate-pop-in {
-  animation: pop-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
 @keyframes score-bump {
   0%   { transform: scale(1); }
-  35%  { transform: scale(1.18); color: var(--color-lime); }
+  35%  { transform: scale(1.16); color: var(--color-lime-raw); }
   100% { transform: scale(1); }
 }
 @utility animate-score-bump {
-  animation: score-bump 0.42s ease-out;
+  animation: score-bump 0.4s ease-out;
 }
 
 @keyframes shuttle-fall {
@@ -186,86 +268,4 @@ body {
   animation: stagger-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Tailwind v4 variant helpers */
 .tabular { font-variant-numeric: tabular-nums; }
-
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
-  }
-}

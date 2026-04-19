@@ -89,6 +89,7 @@ export default function Page() {
       id: session.id,
       date: session.date,
       winTarget: session.winTarget,
+      teamSize: session.teamSize,
       teams: session.teams,
       fixtures: session.fixtures,
     }
@@ -128,15 +129,13 @@ export default function Page() {
         </div>
       </header>
 
-      {/* Celebration overlay */}
-      {match.phase === 'finished' && match.winner !== null && (
-        <WinCelebration
-          winnerName={match.teamNames[match.winner]}
-          winnerEmoji={match.teamEmojis[match.winner]}
-          scores={match.scores}
-          onDismiss={handleMatchWin}
-        />
-      )}
+      <WinCelebration
+        open={match.phase === 'finished' && match.winner !== null}
+        winnerName={match.winner !== null ? match.teamNames[match.winner] : ''}
+        winnerEmoji={match.winner !== null ? match.teamEmojis[match.winner] : '🏆'}
+        scores={match.scores}
+        onDismiss={handleMatchWin}
+      />
 
       {/* Tab body */}
       <div className="mx-auto w-full max-w-xl flex-1">

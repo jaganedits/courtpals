@@ -1,7 +1,28 @@
 'use client'
 
 import { useState } from 'react'
-import type { SessionPlayer } from '@/types'
+import { Plus, Pencil, Trash2, Users, Star } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@/components/ui/input-group'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
+import type { PlayerRating, SessionPlayer } from '@/types'
 
 const EMOJIS = [
   '🏸','🔥','⚡','🌟','💪','🦁','🐯','🦊','🐺','🦅',
@@ -19,6 +40,7 @@ interface Props {
 export default function PlayerRegistry({ players, onAdd, onRemove, onUpdate }: Props) {
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState('🏸')
+  const [rating, setRating] = useState<PlayerRating>(3)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
 
@@ -29,9 +51,11 @@ export default function PlayerRegistry({ players, onAdd, onRemove, onUpdate }: P
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       name: trimmed,
       emoji,
+      rating,
     })
     setName('')
     setEmoji('🏸')
+    setRating(3)
   }
 
   function startEdit(p: SessionPlayer) {
@@ -47,152 +71,213 @@ export default function PlayerRegistry({ players, onAdd, onRemove, onUpdate }: P
 
   return (
     <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
-      {/* Header */}
       <header className="flex items-baseline justify-between">
         <div>
-          <p className="font-display text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-ink-dim)]">
+          <p className="font-display text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
             the squad
           </p>
-          <h1 className="font-display text-3xl font-extrabold leading-none text-[var(--color-chalk)]">
-            Roster
-          </h1>
+          <h1 className="font-display text-3xl font-extrabold leading-none">Roster</h1>
         </div>
-        <div className="font-score flex items-end gap-1 text-[var(--color-lime)]">
-          <span className="text-3xl font-extrabold leading-none tabular">{players.length.toString().padStart(2, '0')}</span>
-          <span className="pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-ink-dim)]">players</span>
-        </div>
+        <Badge variant="secondary" className="font-score gap-1 tabular">
+          <span className="text-base font-extrabold">
+            {players.length.toString().padStart(2, '0')}
+          </span>
+          <span className="font-display text-[9px] font-bold uppercase tracking-[0.18em]">
+            players
+          </span>
+        </Badge>
       </header>
 
-      {/* Add-player card */}
-      <section className="relative rounded-2xl border-2 border-[var(--color-line)] bg-[var(--color-card)] p-4 shadow-brut">
-        <div className="absolute -top-2.5 left-4 rounded-md bg-[var(--color-lime)] px-2 py-0.5">
-          <span className="font-display text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--color-bg)]">
-            Add player
-          </span>
-        </div>
-
-        <div className="mt-1 flex items-stretch gap-2">
-          <div
-            aria-hidden
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-[var(--color-line)] bg-[var(--color-bg-raised)] text-2xl"
-          >
-            {emoji}
-          </div>
-          <input
-            type="text"
-            value={name}
-            maxLength={20}
-            onChange={e => setName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            placeholder="Player name"
-            className="min-w-0 flex-1 rounded-xl border-2 border-[var(--color-line)] bg-[var(--color-bg-raised)] px-3 font-display text-base font-semibold text-[var(--color-chalk)] placeholder-[var(--color-ink-dim)]/70 focus:border-[var(--color-lime)] focus:outline-none"
-          />
-          <button
-            onClick={handleAdd}
-            disabled={!name.trim()}
-            className="rounded-xl bg-[var(--color-lime)] px-4 font-display text-sm font-extrabold uppercase tracking-[0.12em] text-[var(--color-bg)] shadow-brut-sm transition-all disabled:cursor-not-allowed disabled:opacity-30 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-          >
-            Add
-          </button>
-        </div>
-
-        <div className="mt-3">
-          <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-ink-dim)] mb-2">
-            pick an emoji
-          </p>
-          <div className="grid grid-cols-10 gap-1.5">
-            {EMOJIS.map(e => (
-              <button
-                key={e}
-                onClick={() => setEmoji(e)}
-                className={`aspect-square rounded-lg border text-lg transition-all ${
-                  emoji === e
-                    ? 'border-[var(--color-lime)] bg-[var(--color-lime)]/15 ring-lime scale-110'
-                    : 'border-[var(--color-line)] bg-[var(--color-bg-raised)] hover:border-[var(--color-lime)]/40 active:scale-95'
-                }`}
+      <Card className="relative overflow-visible">
+        <Badge className="absolute -top-2.5 left-4 font-display text-[10px] font-extrabold uppercase tracking-[0.18em]">
+          Add player
+        </Badge>
+        <CardHeader className="sr-only">
+          <CardTitle>Add a new player</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 pt-4">
+          <InputGroup>
+            <InputGroupAddon>
+              <span className="text-xl leading-none">{emoji}</span>
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Player name"
+              value={name}
+              maxLength={20}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              className="font-display font-semibold"
+            />
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                type="button"
+                onClick={handleAdd}
+                disabled={!name.trim()}
+                variant="default"
+                className="font-display font-extrabold uppercase tracking-[0.12em]"
               >
-                {e}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+                <Plus data-icon="inline-start" />
+                Add
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
 
-      {/* Player list */}
+          <div className="flex flex-col gap-2">
+            <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              Pick an emoji
+            </p>
+            <ToggleGroup
+              type="single"
+              value={emoji}
+              onValueChange={v => v && setEmoji(v)}
+              className="grid grid-cols-10 gap-1.5"
+            >
+              {EMOJIS.map(e => (
+                <ToggleGroupItem
+                  key={e}
+                  value={e}
+                  aria-label={`Emoji ${e}`}
+                  className="aspect-square size-auto rounded-lg border border-border bg-secondary text-lg data-[state=on]:bg-primary/15 data-[state=on]:border-primary data-[state=on]:scale-110 transition-transform"
+                >
+                  {e}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              Skill level
+            </p>
+            <StarRating value={rating} onChange={setRating} size="lg" />
+          </div>
+        </CardContent>
+      </Card>
+
       {players.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-[var(--color-line)] px-6 py-10 text-center">
-          <p className="text-3xl mb-2">🏸</p>
-          <p className="font-display text-sm font-bold text-[var(--color-ink-soft)]">
-            No players on the roster yet
-          </p>
-          <p className="mt-1 text-xs text-[var(--color-ink-dim)]">
-            Add your regulars above. They stick around for every Saturday.
-          </p>
-        </div>
+        <Empty className="border-2">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Users />
+            </EmptyMedia>
+            <EmptyTitle className="font-display font-bold">
+              No players on the roster yet
+            </EmptyTitle>
+            <EmptyDescription>
+              Add your regulars above. They stick around for every Saturday.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
-        <section className="space-y-2">
-          <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-ink-dim)] px-1">
+        <section className="flex flex-col gap-2">
+          <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-1">
             regulars
           </p>
+          <Separator />
           {players.map((p, i) => {
             const isEditing = editingId === p.id
             return (
-              <div
+              <Card
                 key={p.id}
                 style={{ animationDelay: `${i * 40}ms` }}
-                className="animate-rise group flex items-center gap-3 rounded-2xl border-2 border-[var(--color-line)] bg-[var(--color-card)] px-3 py-2.5 transition-colors hover:border-[var(--color-lime)]/30"
+                className="animate-rise gap-0 border-2 py-0"
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-bg-raised)] text-2xl">
-                  {p.emoji}
-                </span>
+                <CardContent className="flex items-center gap-3 p-3">
+                  {isEditing ? (
+                    <Input
+                      autoFocus
+                      value={editName}
+                      maxLength={20}
+                      onChange={e => setEditName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && saveEdit(p)}
+                      onBlur={() => saveEdit(p)}
+                      className="h-9 flex-1 font-display font-semibold"
+                    />
+                  ) : (
+                    <div className="min-w-0 flex-1">
+                      <p
+                        onDoubleClick={() => startEdit(p)}
+                        className="truncate font-display text-base font-extrabold"
+                      >
+                        {p.name}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                          #{(i + 1).toString().padStart(2, '0')}
+                        </p>
+                        <StarRating
+                          value={p.rating}
+                          onChange={r => onUpdate({ ...p, rating: r })}
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+                  )}
 
-                {isEditing ? (
-                  <input
-                    autoFocus
-                    value={editName}
-                    maxLength={20}
-                    onChange={e => setEditName(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && saveEdit(p)}
-                    onBlur={() => saveEdit(p)}
-                    className="min-w-0 flex-1 rounded-lg border border-[var(--color-lime)] bg-[var(--color-bg-raised)] px-2 py-1 font-display text-base font-semibold text-[var(--color-chalk)] focus:outline-none"
-                  />
-                ) : (
-                  <div className="min-w-0 flex-1">
-                    <p
-                      onDoubleClick={() => startEdit(p)}
-                      className="truncate font-display text-base font-bold text-[var(--color-chalk)]"
-                    >
-                      {p.name}
-                    </p>
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-dim)]">
-                      #{(i + 1).toString().padStart(2, '0')}
-                    </p>
-                  </div>
-                )}
-
-                {!isEditing && (
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => startEdit(p)}
-                      aria-label={`Edit ${p.name}`}
-                      className="rounded-lg px-2 py-1 font-display text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-lime)]"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => onRemove(p.id)}
-                      aria-label={`Remove ${p.name}`}
-                      className="rounded-lg px-2 py-1 font-display text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink-dim)] transition-colors hover:bg-[var(--color-loss)]/10 hover:text-[var(--color-loss)]"
-                    >
-                      Cut
-                    </button>
-                  </div>
-                )}
-              </div>
+                  {!isEditing && (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Edit ${p.name}`}
+                        onClick={() => startEdit(p)}
+                      >
+                        <Pencil />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Remove ${p.name}`}
+                        onClick={() => onRemove(p.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )
           })}
         </section>
       )}
+    </div>
+  )
+}
+
+function StarRating({
+  value,
+  onChange,
+  size = 'md',
+}: {
+  value: PlayerRating
+  onChange: (r: PlayerRating) => void
+  size?: 'sm' | 'md' | 'lg'
+}) {
+  const star = size === 'sm' ? 'size-3' : size === 'lg' ? 'size-6' : 'size-4'
+  return (
+    <div className="flex items-center gap-0.5" role="radiogroup" aria-label="Skill rating">
+      {[1, 2, 3, 4, 5].map(n => {
+        const active = n <= value
+        return (
+          <button
+            key={n}
+            type="button"
+            role="radio"
+            aria-checked={n === value}
+            aria-label={`${n} of 5`}
+            onClick={() => onChange(n as PlayerRating)}
+            className="p-0.5 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
+          >
+            <Star
+              className={cn(
+                star,
+                active ? 'fill-primary text-primary' : 'text-muted-foreground/40',
+              )}
+            />
+          </button>
+        )
+      })}
     </div>
   )
 }

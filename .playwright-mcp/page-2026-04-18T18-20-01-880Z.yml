@@ -1,0 +1,55 @@
+- generic:
+  - generic [active]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - navigation [ref=e6]:
+          - button "previous" [disabled] [ref=e7]:
+            - img "previous" [ref=e8]
+          - generic [ref=e10]:
+            - generic [ref=e11]: 1/
+            - text: "1"
+          - button "next" [disabled] [ref=e12]:
+            - img "next" [ref=e13]
+        - generic [ref=e16]:
+          - img [ref=e17]
+          - generic "Latest available version is detected (16.2.4)." [ref=e19]: Next.js 16.2.4
+          - generic [ref=e20]: Turbopack
+      - dialog "Build Error" [ref=e22]:
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - generic [ref=e27]:
+              - generic [ref=e29]: Build Error
+              - generic [ref=e30]:
+                - button "Copy Error Info" [ref=e31] [cursor=pointer]:
+                  - img [ref=e32]
+                - link "Go to related documentation" [ref=e34] [cursor=pointer]:
+                  - /url: https://nextjs.org/docs/messages/module-not-found
+                  - img [ref=e35]
+                - button "Attach Node.js inspector" [ref=e37] [cursor=pointer]:
+                  - img [ref=e38]
+            - generic [ref=e47]: "Module not found: Can't resolve 'next/font/google/target.css'"
+          - generic [ref=e49]:
+            - generic [ref=e51]:
+              - img [ref=e53]
+              - generic [ref=e56]: ./app/layout.tsx
+              - button "Open in editor" [ref=e57] [cursor=pointer]:
+                - img [ref=e59]
+            - generic [ref=e62]:
+              - generic [ref=e63]: Module not found
+              - generic [ref=e64]: ": Can't resolve"
+              - text: "'next/font/google/target.css'"
+              - generic [ref=e65]:
+                - text: "Axes can only be defined for variable fonts when the weight property is nonexistent or set to `variable`. Debug info: - Execution of <ModuleAssetContext as AssetContext>::resolve_asset failed - Execution of resolve failed - Execution of resolve_internal failed - Execution of NextFontGoogleReplacer::import_map_result failed - Execution of *get_font_css_properties failed - Execution of font_options_from_query_map failed - Axes can only be defined for variable fonts when the weight property is nonexistent or set to `variable`. Error while looking up import map: Axes can only be defined for variable fonts when the weight property is nonexistent or set to `variable`. Debug info: - Execution of NextFontGoogleReplacer::import_map_result failed - Execution of *get_font_css_properties failed - Execution of font_options_from_query_map failed - Axes can only be defined for variable fonts when the weight property is nonexistent or set to `variable`."
+                - link "https://nextjs.org/docs/messages/module-not-found" [ref=e66] [cursor=pointer]:
+                  - /url: https://nextjs.org/docs/messages/module-not-found
+        - generic [ref=e67]: "1"
+        - generic [ref=e68]: "2"
+    - generic [ref=e73] [cursor=pointer]:
+      - button "Open Next.js Dev Tools" [ref=e74]:
+        - img [ref=e75]
+      - button "Open issues overlay" [ref=e79]:
+        - generic [ref=e80]:
+          - generic [ref=e81]: "0"
+          - generic [ref=e82]: "1"
+        - generic [ref=e83]: Issue
+  - alert [ref=e84]

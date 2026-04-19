@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { SavedSession } from '@/types'
 
 const KEY = 'courtpals_history'
@@ -16,7 +16,11 @@ function load(): SavedSession[] {
 }
 
 export function useHistory() {
-  const [history, setHistory] = useState<SavedSession[]>(() => load())
+  const [history, setHistory] = useState<SavedSession[]>([])
+
+  useEffect(() => {
+    setHistory(load())
+  }, [])
 
   const saveSession = useCallback((session: SavedSession) => {
     setHistory(prev => {

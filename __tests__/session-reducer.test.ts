@@ -4,13 +4,14 @@ import {
   rankStandings,
   generatePlayoffSeed,
   generateFinals,
+  snakeDraft,
 } from '../hooks/useSession'
 import type { DaySession, Fixture, SessionPlayer, SessionTeam } from '../types'
 
-const p1: SessionPlayer = { id: 'p1', name: 'Alice', emoji: '🏸' }
-const p2: SessionPlayer = { id: 'p2', name: 'Bob', emoji: '🔥' }
-const p3: SessionPlayer = { id: 'p3', name: 'Carol', emoji: '🦁' }
-const p4: SessionPlayer = { id: 'p4', name: 'Dan', emoji: '⚡' }
+const p1: SessionPlayer = { id: 'p1', name: 'Alice', emoji: '🏸', rating: 3 }
+const p2: SessionPlayer = { id: 'p2', name: 'Bob', emoji: '🔥', rating: 3 }
+const p3: SessionPlayer = { id: 'p3', name: 'Carol', emoji: '🦁', rating: 3 }
+const p4: SessionPlayer = { id: 'p4', name: 'Dan', emoji: '⚡', rating: 3 }
 
 function withPlayers(...players: SessionPlayer[]) {
   return players.reduce(
@@ -46,8 +47,8 @@ describe('sessionReducer', () => {
 
     it('splits 6 players into 3 teams of 2', () => {
       const players = [p1, p2, p3, p4,
-        { id: 'p5', name: 'Eve', emoji: '🌟' },
-        { id: 'p6', name: 'Frank', emoji: '💪' }]
+        { id: 'p5', name: 'Eve', emoji: '🌟', rating: 3 as const },
+        { id: 'p6', name: 'Frank', emoji: '💪', rating: 3 as const }]
       let s = players.reduce((acc, p) => sessionReducer(acc, { type: 'ADD_PLAYER', payload: p }), initialSession)
       s = sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })
       expect(s.teams).toHaveLength(3)
@@ -65,10 +66,10 @@ describe('sessionReducer', () => {
 
   describe('START_SESSION', () => {
     const eightPlayers = [p1, p2, p3, p4,
-      { id: 'p5', name: 'Eve', emoji: '🌟' },
-      { id: 'p6', name: 'Frank', emoji: '💪' },
-      { id: 'p7', name: 'Grace', emoji: '🎯' },
-      { id: 'p8', name: 'Henry', emoji: '🚀' }]
+      { id: 'p5', name: 'Eve', emoji: '🌟', rating: 3 as const },
+      { id: 'p6', name: 'Frank', emoji: '💪', rating: 3 as const },
+      { id: 'p7', name: 'Grace', emoji: '🎯', rating: 3 as const },
+      { id: 'p8', name: 'Henry', emoji: '🚀', rating: 3 as const }]
 
     it('generates round-robin fixtures for 4 teams (8 players)', () => {
       let s = eightPlayers.reduce((acc, p) => sessionReducer(acc, { type: 'ADD_PLAYER', payload: p }), initialSession)
@@ -80,8 +81,8 @@ describe('sessionReducer', () => {
 
     it('generates round-robin fixtures for 3 teams (6 players)', () => {
       const players = [p1, p2, p3, p4,
-        { id: 'p5', name: 'Eve', emoji: '🌟' },
-        { id: 'p6', name: 'Frank', emoji: '💪' }]
+        { id: 'p5', name: 'Eve', emoji: '🌟', rating: 3 as const },
+        { id: 'p6', name: 'Frank', emoji: '💪', rating: 3 as const }]
       let s = players.reduce((acc, p) => sessionReducer(acc, { type: 'ADD_PLAYER', payload: p }), initialSession)
       s = sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })
       s = sessionReducer(s, { type: 'START_SESSION' })
@@ -99,10 +100,10 @@ describe('sessionReducer', () => {
   describe('START_FIXTURE / FINISH_FIXTURE', () => {
     function readySession() {
       const eightPlayers = [p1, p2, p3, p4,
-        { id: 'p5', name: 'Eve', emoji: '🌟' },
-        { id: 'p6', name: 'Frank', emoji: '💪' },
-        { id: 'p7', name: 'Grace', emoji: '🎯' },
-        { id: 'p8', name: 'Henry', emoji: '🚀' }]
+        { id: 'p5', name: 'Eve', emoji: '🌟', rating: 3 as const },
+        { id: 'p6', name: 'Frank', emoji: '💪', rating: 3 as const },
+        { id: 'p7', name: 'Grace', emoji: '🎯', rating: 3 as const },
+        { id: 'p8', name: 'Henry', emoji: '🚀', rating: 3 as const }]
       let s = eightPlayers.reduce((acc, p) => sessionReducer(acc, { type: 'ADD_PLAYER', payload: p }), initialSession)
       s = sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })
       s = sessionReducer(s, { type: 'START_SESSION' })
@@ -209,6 +210,62 @@ function rrFixture(aId: string, bId: string, scoreA: number, scoreB: number): Fi
     round: 'rr',
   }
 }
+
+describe('snakeDraft', () => {
+  type P = { id: string; rating: number }
+  const rate = (id: string, rating: number): P => ({ id, rating })
+
+  it('pairs strongest with weakest in 2-team split', () => {
+    const players = [rate('a', 5), rate('b', 4), rate('c', 2), rate('d', 1)]
+    const teams = snakeDraft(players, 2)
+    const sums = teams.map(t => t.reduce((s, p) => s + p.rating, 0))
+    expect(sums[0]).toBe(sums[1]) // both teams rated 6
+  })
+
+  it('keeps team totals within 1 when odd spread across 3 teams', () => {
+    const players = [5, 4, 3, 3, 2, 1].map((r, i) => rate(`p${i}`, r))
+    const teams = snakeDraft(players, 3)
+    const sums = teams.map(t => t.reduce((s, p) => s + p.rating, 0))
+    const maxDiff = Math.max(...sums) - Math.min(...sums)
+    expect(maxDiff).toBeLessThanOrEqual(1)
+  })
+
+  it('assigns every player exactly once', () => {
+    const players = [5, 5, 3, 3, 1, 1, 4, 2].map((r, i) => rate(`p${i}`, r))
+    const teams = snakeDraft(players, 4)
+    const assigned = teams.flat().map(p => p.id).sort()
+    expect(assigned).toEqual(players.map(p => p.id).sort())
+  })
+
+  it('handles empty input', () => {
+    expect(snakeDraft([], 3)).toEqual([[], [], []])
+  })
+
+  it('handles odd player count (last team gets fewer)', () => {
+    const players = [5, 4, 3, 2, 1].map((r, i) => rate(`p${i}`, r))
+    const teams = snakeDraft(players, 2)
+    expect(teams.flat()).toHaveLength(5)
+    expect([teams[0].length, teams[1].length].sort()).toEqual([2, 3])
+  })
+})
+
+describe('AUTO_SPLIT_TEAMS with ratings', () => {
+  it('produces balanced rating sums with 2v2 + varied ratings', () => {
+    const stars = [
+      { id: 'a', name: 'Alice', emoji: '🏸', rating: 5 as const },
+      { id: 'b', name: 'Bob', emoji: '🔥', rating: 4 as const },
+      { id: 'c', name: 'Carol', emoji: '🦁', rating: 2 as const },
+      { id: 'd', name: 'Dan', emoji: '⚡', rating: 1 as const },
+    ]
+    let s = stars.reduce(
+      (acc, p) => sessionReducer(acc, { type: 'ADD_PLAYER', payload: p }),
+      initialSession,
+    )
+    s = sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })
+    const sums = s.teams.map(t => t.players.reduce((sum, p) => sum + p.rating, 0))
+    expect(Math.abs(sums[0] - sums[1])).toBeLessThanOrEqual(1)
+  })
+})
 
 describe('rankStandings', () => {
   it('sorts by pts descending', () => {
@@ -356,7 +413,7 @@ function setupSession(playerCount: number): DaySession {
   for (let i = 1; i <= playerCount; i++) {
     s = sessionReducer(s, {
       type: 'ADD_PLAYER',
-      payload: { id: `p${i}`, name: `P${i}`, emoji: '🏸' },
+      payload: { id: `p${i}`, name: `P${i}`, emoji: '🏸', rating: 3 },
     })
   }
   s = sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })

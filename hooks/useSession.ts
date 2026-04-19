@@ -131,13 +131,44 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
+/**
+ * Snake-draft pairs players by rating so team rating-sums are balanced.
+ * Ties in rating are broken randomly so the draft isn't deterministic.
+ *
+ * Example (4 players into 2 teams of 2): sorted desc → [5, 4, 2, 1]
+ *   round 0 forward:  team0=5, team1=4
+ *   round 1 backward: team1=2, team0=1
+ *   teams: [5,1]=6 vs [4,2]=6 → balanced
+ */
+export function snakeDraft<T extends { rating: number }>(players: T[], teamCount: number): T[][] {
+  if (teamCount <= 0) return []
+  const byRating = [...players].sort((a, b) => b.rating - a.rating || Math.random() - 0.5)
+  const teams: T[][] = Array.from({ length: teamCount }, () => [])
+  byRating.forEach((player, i) => {
+    const round = Math.floor(i / teamCount)
+    const posInRound = i % teamCount
+    const teamIndex = round % 2 === 0 ? posInRound : teamCount - 1 - posInRound
+    teams[teamIndex].push(player)
+  })
+  return teams
+}
+
 function buildTeamsFromPlayers(players: SessionPlayer[], teamSize: TeamSize): SessionTeam[] {
-  const shuffled = shuffle(players)
-  const teamCount = Math.ceil(shuffled.length / teamSize)
-  return Array.from({ length: teamCount }, (_, i) => ({
+  if (teamSize === 1) {
+    // Solo play: every player is their own team. Rating doesn't affect composition; shuffle for a bit of variety in display order.
+    const shuffled = shuffle(players)
+    return shuffled.map((p, i) => ({
+      id: uid(),
+      name: `Team ${i + 1}`,
+      players: [p],
+    }))
+  }
+  const teamCount = Math.ceil(players.length / teamSize)
+  const drafted = snakeDraft(players, teamCount)
+  return drafted.map((teamPlayers, i) => ({
     id: uid(),
     name: `Team ${i + 1}`,
-    players: shuffled.slice(i * teamSize, i * teamSize + teamSize),
+    players: teamPlayers,
   }))
 }
 
