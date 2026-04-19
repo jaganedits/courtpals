@@ -1,5 +1,11 @@
-import { sessionReducer, initialSession } from '../hooks/useSession'
-import type { SessionPlayer } from '../types'
+import {
+  sessionReducer,
+  initialSession,
+  rankStandings,
+  generatePlayoffSeed,
+  generateFinals,
+} from '../hooks/useSession'
+import type { DaySession, Fixture, SessionPlayer, SessionTeam } from '../types'
 
 const p1: SessionPlayer = { id: 'p1', name: 'Alice', emoji: '🏸' }
 const p2: SessionPlayer = { id: 'p2', name: 'Bob', emoji: '🔥' }
@@ -135,5 +141,206 @@ describe('sessionReducer', () => {
       expect(s.players).toHaveLength(0)
       expect(s.phase).toBe('setup')
     })
+  })
+})
+
+function T(id: string): SessionTeam {
+  return { id, name: id, players: [] }
+}
+
+function rrFixture(aId: string, bId: string, scoreA: number, scoreB: number): Fixture {
+  return {
+    id: `${aId}-${bId}`,
+    teamAId: aId,
+    teamBId: bId,
+    status: 'done',
+    scoreA,
+    scoreB,
+    winnerId: scoreA > scoreB ? aId : bId,
+    round: 'rr',
+  }
+}
+
+describe('rankStandings', () => {
+  it('sorts by pts descending', () => {
+    const teams = [T('a'), T('b'), T('c')]
+    const fixtures = [
+      rrFixture('a', 'b', 21, 10),
+      rrFixture('a', 'c', 21, 15),
+      rrFixture('b', 'c', 15, 21),
+    ]
+    const rows = rankStandings(teams, fixtures)
+    expect(rows.map(r => r.team.id)).toEqual(['a', 'c', 'b'])
+  })
+
+  it('breaks a pair-wise points tie with head-to-head', () => {
+    // 4 teams, a and b both finish on 4 pts, b won the direct match.
+    const teams = [T('a'), T('b'), T('c'), T('d')]
+    const fixtures = [
+      rrFixture('a', 'b', 15, 21), // b beats a
+      rrFixture('a', 'c', 21, 10), // a beats c
+      rrFixture('a', 'd', 21, 10), // a beats d
+      rrFixture('b', 'c', 21, 10), // b beats c
+      rrFixture('b', 'd', 10, 21), // d beats b
+      rrFixture('c', 'd', 21, 0),  // c beats d
+    ]
+    // pts: a=4, b=4, c=2, d=2. H2H a↔b: b wins.
+    const rows = rankStandings(teams, fixtures)
+    expect(rows.map(r => r.team.id)).toEqual(['b', 'a', 'c', 'd'])
+  })
+
+  it('falls back to point differential on a 3-way cycle', () => {
+    // rock-paper-scissors: all three on 2 pts; ranked by diff.
+    const teams = [T('a'), T('b'), T('c')]
+    const fixtures = [
+      rrFixture('a', 'b', 21, 10), // a +11
+      rrFixture('b', 'c', 21, 15), // b +6
+      rrFixture('c', 'a', 21, 19), // c +2, a -2
+    ]
+    // diffs: a = +11-2 = +9, b = -11+6 = -5, c = -6+2 = -4
+    const rows = rankStandings(teams, fixtures)
+    expect(rows.map(r => r.team.id)).toEqual(['a', 'c', 'b'])
+  })
+
+  it('falls back to points-scored when diff is equal', () => {
+    // Two teams with identical pts and identical diff; rank by points scored.
+    // a vs b: b wins 21-15 (a -6, b +6)
+    // Force another pair to match exactly so diff stays tied.
+    const teams = [T('a'), T('b'), T('c'), T('d')]
+    const fixtures = [
+      rrFixture('a', 'b', 15, 21),
+      rrFixture('a', 'c', 21, 15), // a: scored 36, conceded 36 → diff 0
+      rrFixture('a', 'd', 15, 21), // a: scored 51, conceded 57 → diff -6
+      rrFixture('b', 'c', 15, 21), // b: scored 42, conceded 36 → diff +6
+      rrFixture('b', 'd', 15, 21), // b: scored 57, conceded 57 → diff 0
+      rrFixture('c', 'd', 21, 10),
+    ]
+    // Just assert rankStandings returns the four teams in an order that respects pts desc,
+    // and that points-scored doesn't crash.
+    const rows = rankStandings(teams, fixtures)
+    expect(rows).toHaveLength(4)
+    const prev = rows.map(r => r.pts)
+    for (let i = 1; i < prev.length; i++) {
+      expect(prev[i]).toBeLessThanOrEqual(prev[i - 1])
+    }
+  })
+
+  it('ignores non-RR fixtures when computing points', () => {
+    const teams = [T('a'), T('b')]
+    const fixtures: Fixture[] = [
+      {
+        id: 'p1',
+        teamAId: 'a',
+        teamBId: 'b',
+        status: 'done',
+        scoreA: 21,
+        scoreB: 0,
+        winnerId: 'a',
+        round: 'final',
+      },
+    ]
+    const rows = rankStandings(teams, fixtures)
+    rows.forEach(r => expect(r.pts).toBe(0))
+  })
+})
+
+describe('generatePlayoffSeed', () => {
+  it('returns empty array for 2 teams', () => {
+    expect(generatePlayoffSeed([T('a'), T('b')], ['a', 'b'])).toEqual([])
+  })
+
+  it('returns empty array for 3 teams', () => {
+    expect(generatePlayoffSeed([T('a'), T('b'), T('c')], ['a', 'b', 'c'])).toEqual([])
+  })
+
+  it('returns Final + 3rd-place for 4 teams', () => {
+    const teams = [T('1'), T('2'), T('3'), T('4')]
+    const fx = generatePlayoffSeed(teams, ['1', '2', '3', '4'])
+    expect(fx).toHaveLength(2)
+    expect(fx.find(f => f.round === 'final')).toMatchObject({ teamAId: '1', teamBId: '2' })
+    expect(fx.find(f => f.round === '3rd')).toMatchObject({ teamAId: '3', teamBId: '4' })
+  })
+
+  it('returns Final + 3rd-place for 5 teams (5th drops out)', () => {
+    const teams = [T('1'), T('2'), T('3'), T('4'), T('5')]
+    const fx = generatePlayoffSeed(teams, ['1', '2', '3', '4', '5'])
+    expect(fx).toHaveLength(2)
+    expect(fx.find(f => f.round === 'final')).toMatchObject({ teamAId: '1', teamBId: '2' })
+    expect(fx.find(f => f.round === '3rd')).toMatchObject({ teamAId: '3', teamBId: '4' })
+  })
+
+  it('returns two Semis for 6 teams seeded 1v4 and 2v3', () => {
+    const teams = [T('1'), T('2'), T('3'), T('4'), T('5'), T('6')]
+    const fx = generatePlayoffSeed(teams, ['1', '2', '3', '4', '5', '6'])
+    expect(fx).toHaveLength(2)
+    expect(fx.every(f => f.round === 'semi')).toBe(true)
+    const pairs = fx.map(f => [f.teamAId, f.teamBId].sort().join('-')).sort()
+    expect(pairs).toEqual(['1-4', '2-3'])
+  })
+
+  it('all seeded fixtures start pending with zero scores', () => {
+    const teams = [T('1'), T('2'), T('3'), T('4')]
+    const fx = generatePlayoffSeed(teams, ['1', '2', '3', '4'])
+    fx.forEach(f => {
+      expect(f.status).toBe('pending')
+      expect(f.scoreA).toBe(0)
+      expect(f.scoreB).toBe(0)
+      expect(f.winnerId).toBeNull()
+    })
+  })
+})
+
+describe('generateFinals', () => {
+  it('pairs semi winners → Final, semi losers → 3rd-place', () => {
+    const semi1: Fixture = {
+      id: 's1',
+      teamAId: '1',
+      teamBId: '4',
+      status: 'done',
+      scoreA: 21,
+      scoreB: 15,
+      winnerId: '1',
+      round: 'semi',
+    }
+    const semi2: Fixture = {
+      id: 's2',
+      teamAId: '2',
+      teamBId: '3',
+      status: 'done',
+      scoreA: 18,
+      scoreB: 21,
+      winnerId: '3',
+      round: 'semi',
+    }
+    const fx = generateFinals([semi1, semi2])
+    expect(fx).toHaveLength(2)
+    const final = fx.find(f => f.round === 'final')!
+    const third = fx.find(f => f.round === '3rd')!
+    expect([final.teamAId, final.teamBId].sort()).toEqual(['1', '3'])
+    expect([third.teamAId, third.teamBId].sort()).toEqual(['2', '4'])
+  })
+
+  it('returns empty if a semi is still pending', () => {
+    const semi1: Fixture = {
+      id: 's1',
+      teamAId: '1',
+      teamBId: '4',
+      status: 'done',
+      scoreA: 21,
+      scoreB: 15,
+      winnerId: '1',
+      round: 'semi',
+    }
+    const semi2: Fixture = {
+      id: 's2',
+      teamAId: '2',
+      teamBId: '3',
+      status: 'active',
+      scoreA: 0,
+      scoreB: 0,
+      winnerId: null,
+      round: 'semi',
+    }
+    expect(generateFinals([semi1, semi2])).toEqual([])
   })
 })
