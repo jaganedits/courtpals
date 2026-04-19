@@ -142,6 +142,55 @@ describe('sessionReducer', () => {
       expect(s.phase).toBe('setup')
     })
   })
+
+  describe('UPDATE_TEAM_NAME', () => {
+    function built() {
+      let s = withPlayers(p1, p2, p3, p4)
+      return sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })
+    }
+
+    it('renames only the targeted team', () => {
+      let s = built()
+      const firstId = s.teams[0].id
+      const firstName = s.teams[0].name
+      const secondName = s.teams[1].name
+      s = sessionReducer(s, {
+        type: 'UPDATE_TEAM_NAME',
+        payload: { id: firstId, name: 'Red Dragons' },
+      })
+      expect(s.teams[0].name).toBe('Red Dragons')
+      expect(s.teams[1].name).toBe(secondName)
+      expect(s.teams[0].players.length).toBeGreaterThan(0)
+      expect(firstName).not.toBe('Red Dragons')
+    })
+
+    it('trims whitespace and falls back to existing name on empty input', () => {
+      let s = built()
+      const firstId = s.teams[0].id
+      const originalName = s.teams[0].name
+      s = sessionReducer(s, {
+        type: 'UPDATE_TEAM_NAME',
+        payload: { id: firstId, name: '   ' },
+      })
+      expect(s.teams[0].name).toBe(originalName)
+
+      s = sessionReducer(s, {
+        type: 'UPDATE_TEAM_NAME',
+        payload: { id: firstId, name: '  Vipers  ' },
+      })
+      expect(s.teams[0].name).toBe('Vipers')
+    })
+
+    it('ignores unknown team ids', () => {
+      let s = built()
+      const before = s.teams.map(t => t.name)
+      s = sessionReducer(s, {
+        type: 'UPDATE_TEAM_NAME',
+        payload: { id: 'nope', name: 'whatever' },
+      })
+      expect(s.teams.map(t => t.name)).toEqual(before)
+    })
+  })
 })
 
 function T(id: string): SessionTeam {

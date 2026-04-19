@@ -189,6 +189,16 @@ export function sessionReducer(state: DaySession, action: SessionAction): DaySes
       return { ...state, teams }
     }
 
+    case 'UPDATE_TEAM_NAME': {
+      const { id, name } = action.payload
+      const trimmed = name.trim().slice(0, 24)
+      if (!trimmed) return state
+      return {
+        ...state,
+        teams: state.teams.map(t => (t.id === id ? { ...t, name: trimmed } : t)),
+      }
+    }
+
     case 'START_SESSION':
       return {
         ...state,

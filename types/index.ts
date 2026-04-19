@@ -54,6 +54,7 @@ export type SessionAction =
   | { type: 'START_FIXTURE'; payload: string }
   | { type: 'FINISH_FIXTURE'; payload: { fixtureId: string; scoreA: number; scoreB: number; winnerId: string } }
   | { type: 'RESET_SESSION' }
+  | { type: 'UPDATE_TEAM_NAME'; payload: { id: string; name: string } }
 
 export type TeamIndex = 0 | 1
 
