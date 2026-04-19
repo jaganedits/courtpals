@@ -49,6 +49,19 @@ export default function DaySetup({
   const teamCount = Math.ceil(selectedCount / teamSize)
   const matchCount = teamCount >= 2 ? (teamCount * (teamCount - 1)) / 2 : 0
   const oddPlayer = teamSize === 2 && selectedCount > 0 && selectedCount % 2 === 1
+  const allChecked = allPlayers.length > 0 && selectedCount === allPlayers.length
+  const someChecked = selectedCount > 0 && !allChecked
+
+  function handleToggleAll() {
+    // If everyone is already checked in, clear them; otherwise fill the missing.
+    if (allChecked) {
+      allPlayers.forEach(p => onToggle(p.id))
+    } else {
+      allPlayers.forEach(p => {
+        if (!selectedIds.has(p.id)) onToggle(p.id)
+      })
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
@@ -216,8 +229,27 @@ export default function DaySetup({
               <Table>
                 <TableHeader>
                   <TableRow className="border-b-2 border-border">
-                    <TableHead className="w-12 text-center font-display text-[9px] font-bold uppercase tracking-[0.18em]">
-                      in
+                    <TableHead className="w-12 text-center">
+                      <button
+                        type="button"
+                        aria-label={allChecked ? 'Deselect all players' : 'Select all players'}
+                        aria-pressed={allChecked}
+                        onClick={handleToggleAll}
+                        className={cn(
+                          'mx-auto flex size-6 items-center justify-center rounded-full border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                          allChecked
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : someChecked
+                            ? 'border-primary bg-primary/25 text-primary'
+                            : 'border-border bg-transparent text-muted-foreground hover:border-primary/50',
+                        )}
+                      >
+                        {allChecked ? (
+                          <Check className="size-3.5" />
+                        ) : someChecked ? (
+                          <span aria-hidden className="h-0.5 w-3 rounded-full bg-primary" />
+                        ) : null}
+                      </button>
                     </TableHead>
                     <TableHead className="w-14 text-center font-display text-[9px] font-bold uppercase tracking-[0.18em]">
                       icon
@@ -290,12 +322,12 @@ export default function DaySetup({
       )}
 
       {allPlayers.length > 0 && (
-        <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+72px)] z-30 flex flex-col gap-2 bg-background/80 pt-4 pb-1 -mx-4 px-4 backdrop-blur">
+        <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+72px)] z-30 flex flex-col gap-2 bg-background/80 pt-4 pb-1 -mx-4 px-4 backdrop-blur lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:pt-4 lg:pb-0 lg:backdrop-blur-0">
           {selectedCount >= 2 ? (
             <Button
               size="lg"
               onClick={onAutoSplit}
-              className="h-auto justify-between rounded-2xl border-2 border-primary px-5 py-4 shadow-brut hover:bg-primary active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="h-auto justify-between rounded-2xl border-2 border-primary px-5 py-4 shadow-brut hover:bg-primary active:translate-x-0.5 active:translate-y-0.5 active:shadow-none lg:ml-auto lg:max-w-sm lg:py-3"
             >
               <span className="flex flex-col items-start leading-none">
                 <span className="font-display text-xs font-bold uppercase tracking-[0.18em] opacity-70">
