@@ -1,17 +1,27 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { Trophy, Users, BadgeCheck, Calendar } from 'lucide-react'
 import TabNav, { type Tab } from '@/components/TabNav'
 import LeagueHub from '@/components/LeagueHub'
 import PlayerRegistry from '@/components/PlayerRegistry'
 import ScoreBoard from '@/components/ScoreBoard'
 import WinCelebration from '@/components/WinCelebration'
 import HistoryCalendar from '@/components/HistoryCalendar'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { useRegistry } from '@/hooks/useRegistry'
 import { useSession } from '@/hooks/useSession'
 import { useMatch } from '@/hooks/useMatch'
 import { useHistory } from '@/hooks/useHistory'
 import type { SavedSession } from '@/types'
+
+const DESKTOP_TABS: { id: Tab; label: string; Icon: typeof Trophy }[] = [
+  { id: 'league', label: 'League', Icon: Trophy },
+  { id: 'players', label: 'Roster', Icon: Users },
+  { id: 'score', label: 'Score', Icon: BadgeCheck },
+  { id: 'history', label: 'History', Icon: Calendar },
+]
 
 export default function Page() {
   const [tab, setTab] = useState<Tab>('league')
@@ -100,14 +110,14 @@ export default function Page() {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col pb-[calc(env(safe-area-inset-bottom)+72px)]">
+    <main className="relative flex min-h-screen flex-col pb-[calc(env(safe-area-inset-bottom)+72px)] lg:pb-0">
       {/* Top app bar */}
       <header className="sticky top-0 z-30 border-b border-[var(--color-line)]/60 bg-[var(--color-bg)]/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-xl items-center justify-between gap-6 px-4 py-3 lg:max-w-6xl lg:px-8 lg:py-4">
           <div className="flex items-center gap-2">
             <span
               aria-hidden
-              className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-lime)] text-lg text-[var(--color-bg)]"
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-lime)] text-lg text-[var(--color-bg)] lg:h-10 lg:w-10 lg:text-xl"
             >
               🏸
             </span>
@@ -115,14 +125,51 @@ export default function Page() {
               <span className="font-display text-[9px] font-bold uppercase tracking-[0.22em] text-[var(--color-ink-dim)] leading-none">
                 saturday league
               </span>
-              <span className="font-display text-base font-extrabold leading-tight text-[var(--color-chalk)]">
+              <span className="font-display text-base font-extrabold leading-tight text-[var(--color-chalk)] lg:text-xl">
                 CourtPals
               </span>
             </div>
           </div>
+
+          {/* Desktop inline tabs */}
+          <nav className="hidden lg:block" aria-label="Primary">
+            <ul className="flex items-center gap-1 rounded-2xl border border-border bg-muted/40 p-1">
+              {DESKTOP_TABS.map(t => {
+                const disabled = t.id === 'score' && !scoreTabEnabled
+                const isActive = tab === t.id
+                const { Icon } = t
+                return (
+                  <li key={t.id}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => !disabled && setTab(t.id)}
+                      disabled={disabled}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={cn(
+                        'h-9 gap-2 rounded-xl px-3 font-display text-[11px] font-bold uppercase tracking-[0.14em]',
+                        isActive
+                          ? 'bg-primary/15 text-primary hover:bg-primary/20'
+                          : disabled
+                          ? 'text-muted-foreground/40'
+                          : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                      )}
+                    >
+                      <Icon className="size-4" />
+                      {t.label}
+                      {t.id === 'score' && scoreTabEnabled && !isActive && (
+                        <span aria-hidden className="ml-0.5 size-1.5 animate-live rounded-full bg-primary" />
+                      )}
+                    </Button>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+
           <span
             suppressHydrationWarning
-            className="font-score text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-ink-dim)]"
+            className="font-score text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-ink-dim)] lg:text-xs"
           >
             {todayLabel}
           </span>
@@ -138,7 +185,7 @@ export default function Page() {
       />
 
       {/* Tab body */}
-      <div className="mx-auto w-full max-w-xl flex-1">
+      <div className="mx-auto w-full max-w-xl flex-1 lg:max-w-6xl lg:px-4">
         {tab === 'league' && (
           <LeagueHub
             session={session}
