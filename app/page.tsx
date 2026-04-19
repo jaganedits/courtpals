@@ -113,7 +113,7 @@ export default function Page() {
     <main className="relative flex min-h-screen flex-col pb-[calc(env(safe-area-inset-bottom)+72px)] lg:pb-0">
       {/* Top app bar */}
       <header className="sticky top-0 z-30 border-b border-[var(--color-line)]/60 bg-[var(--color-bg)]/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-xl items-center justify-between gap-6 px-4 py-3 lg:max-w-6xl lg:px-8 lg:py-4">
+        <div className="mx-auto flex max-w-xl items-center justify-between gap-6 px-4 py-3 lg:max-w-350 lg:px-10 lg:py-4">
           <div className="flex items-center gap-2">
             <span
               aria-hidden
@@ -185,7 +185,7 @@ export default function Page() {
       />
 
       {/* Tab body */}
-      <div className="mx-auto w-full max-w-xl flex-1 lg:max-w-6xl lg:px-4">
+      <div className="mx-auto w-full max-w-xl flex-1 lg:max-w-350 lg:px-6">
         {tab === 'league' && (
           <LeagueHub
             session={session}

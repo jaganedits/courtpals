@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { cn } from '@/lib/utils'
 import type { DaySession, SessionAction, SessionPlayer } from '@/types'
 
 type LeagueView = 'checkin' | 'teams' | 'fixtures' | 'standings'
@@ -100,9 +101,55 @@ export default function LeagueHub({
       session.fixtures.every(f => f.status === 'pending')) ||
     (session.phase === 'setup' && session.teams.length > 0)
 
+  const showSplit = !isSetupPhase // active / playoffs / done
+  const saveButton =
+    session.phase === 'done' ? (
+      <Button
+        size="lg"
+        onClick={onSaveSession}
+        className="h-auto w-full justify-between rounded-2xl border-2 border-primary px-5 py-4 shadow-brut active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+      >
+        <span className="flex flex-col items-start leading-none">
+          <span className="font-display text-xs font-bold uppercase tracking-[0.18em] opacity-70">
+            that&apos;s a wrap
+          </span>
+          <span className="font-display text-lg font-extrabold">Save day results</span>
+        </span>
+        <Trophy className="size-6" />
+      </Button>
+    ) : null
+
+  const resetDialog = canReset ? (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+          Reset
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="font-display">Reset this session?</AlertDialogTitle>
+          <AlertDialogDescription>
+            All teams and fixtures will be cleared. The player roster is unaffected.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleReset}>Reset session</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  ) : null
+
   return (
     <div className="flex flex-col">
-      <div className="flex items-center gap-2 border-b border-border/60 bg-background/90 px-4 py-2 backdrop-blur-md">
+      {/* Sub-tab bar: always visible during setup; mobile-only when in active/playoffs/done (desktop shows both) */}
+      <div
+        className={cn(
+          'flex items-center gap-2 border-b border-border/60 bg-background/90 px-4 py-2 backdrop-blur-md',
+          showSplit && 'lg:hidden',
+        )}
+      >
         <Tabs value={view} onValueChange={v => setView(v as LeagueView)}>
           <TabsList>
             {subTabs.map(t => (
@@ -117,27 +164,7 @@ export default function LeagueHub({
           </TabsList>
         </Tabs>
         <div className="flex-1" />
-        {canReset && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                Reset
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="font-display">Reset this session?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  All teams and fixtures will be cleared. The player roster is unaffected.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleReset}>Reset session</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+        {resetDialog}
       </div>
 
       {view === 'checkin' && (
@@ -178,35 +205,47 @@ export default function LeagueHub({
         </div>
       )}
 
-      {view === 'fixtures' && (
-        <FixtureList
-          fixtures={session.fixtures}
-          teams={session.teams}
-          onStartFixture={handleStartFixture}
-        />
+      {/* Mobile (single view based on sub-tab) */}
+      {showSplit && (
+        <div className="lg:hidden">
+          {view === 'fixtures' && (
+            <FixtureList
+              fixtures={session.fixtures}
+              teams={session.teams}
+              onStartFixture={handleStartFixture}
+            />
+          )}
+          {view === 'standings' && (
+            <>
+              <Standings teams={session.teams} fixtures={session.fixtures} />
+              {saveButton && (
+                <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+72px)] z-30 px-4 pb-2">
+                  {saveButton}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
-      {view === 'standings' && (
-        <>
-          <Standings teams={session.teams} fixtures={session.fixtures} />
-          {session.phase === 'done' && (
-            <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+72px)] z-30 px-4 pb-2">
-              <Button
-                size="lg"
-                onClick={onSaveSession}
-                className="h-auto w-full justify-between rounded-2xl border-2 border-primary px-5 py-4 shadow-brut active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-              >
-                <span className="flex flex-col items-start leading-none">
-                  <span className="font-display text-xs font-bold uppercase tracking-[0.18em] opacity-70">
-                    that&apos;s a wrap
-                  </span>
-                  <span className="font-display text-lg font-extrabold">Save day results</span>
-                </span>
-                <Trophy className="size-6" />
-              </Button>
-            </div>
+      {/* Desktop split view */}
+      {showSplit && (
+        <div className="hidden lg:block">
+          {canReset && (
+            <div className="flex justify-end pt-4 pr-4">{resetDialog}</div>
           )}
-        </>
+          <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+            <FixtureList
+              fixtures={session.fixtures}
+              teams={session.teams}
+              onStartFixture={handleStartFixture}
+            />
+            <aside className="flex flex-col gap-4">
+              <Standings teams={session.teams} fixtures={session.fixtures} />
+              {saveButton && <div className="px-4 pb-6">{saveButton}</div>}
+            </aside>
+          </div>
+        </div>
       )}
     </div>
   )
