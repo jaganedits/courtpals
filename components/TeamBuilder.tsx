@@ -6,6 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import type { SessionTeam, SessionAction, TeamSize } from '@/types'
 
@@ -79,7 +87,8 @@ export default function TeamBuilder({ teams, teamSize, dispatch, onReRandomize, 
         </Button>
       </header>
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* Mobile: grid of cards */}
+      <div className="grid grid-cols-2 gap-3 lg:hidden">
         {teams.map((team, ti) => {
           const palette = TEAM_PALETTE[ti % TEAM_PALETTE.length]
           const isOver = dragOverTeamId === team.id
@@ -166,6 +175,108 @@ export default function TeamBuilder({ teams, teamSize, dispatch, onReRandomize, 
           )
         })}
       </div>
+
+      {/* Desktop: table */}
+      <Card className="hidden overflow-hidden py-0 lg:block">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b-2 border-border">
+                <TableHead className="w-10" />
+                <TableHead className="font-display text-[9px] font-bold uppercase tracking-[0.18em]">
+                  team
+                </TableHead>
+                <TableHead className="font-display text-[9px] font-bold uppercase tracking-[0.18em]">
+                  roster
+                </TableHead>
+                <TableHead className="w-20 text-right font-display text-[9px] font-bold uppercase tracking-[0.18em]">
+                  slots
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {teams.map((team, ti) => {
+                const palette = TEAM_PALETTE[ti % TEAM_PALETTE.length]
+                const isOver = dragOverTeamId === team.id
+                const missing = Math.max(0, teamSize - team.players.length)
+                return (
+                  <TableRow
+                    key={team.id}
+                    onDragOver={e => {
+                      e.preventDefault()
+                      if (dragOverTeamId !== team.id) setDragOverTeamId(team.id)
+                    }}
+                    onDragLeave={() =>
+                      setDragOverTeamId(prev => (prev === team.id ? null : prev))
+                    }
+                    onDrop={e => handleDrop(e, team.id)}
+                    className={cn(
+                      'transition-colors',
+                      isOver && 'bg-primary/5',
+                    )}
+                  >
+                    <TableCell className="py-3">
+                      <span
+                        aria-hidden
+                        className="block h-6 w-1 rounded-full"
+                        style={{ background: palette.color }}
+                      />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      {editingTeamId === team.id ? (
+                        <Input
+                          autoFocus
+                          value={draftName}
+                          onChange={e => setDraftName(e.target.value)}
+                          onBlur={() => commitEdit(team.id)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') commitEdit(team.id)
+                            if (e.key === 'Escape') cancelEdit()
+                          }}
+                          maxLength={24}
+                          className="h-8 max-w-40 border-primary/60 px-2 font-display text-xs font-extrabold uppercase tracking-[0.18em]"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => beginEdit(team)}
+                          className="truncate text-left font-display text-xs font-extrabold uppercase tracking-[0.18em] hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                        >
+                          {team.name}
+                        </button>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {team.players.map(p => (
+                          <span
+                            key={p.id}
+                            draggable
+                            onDragStart={e => handleDragStart(e, p.id)}
+                            className="inline-flex cursor-grab items-center rounded-md border border-border bg-secondary px-2 py-1 font-display text-xs font-bold transition-transform hover:border-primary/40 active:cursor-grabbing active:scale-[0.97]"
+                          >
+                            {p.name}
+                          </span>
+                        ))}
+                        {missing > 0 && (
+                          <span className="inline-flex items-center rounded-md border border-dashed border-border px-2 py-1 font-display text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                            {missing} open
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      <Badge variant="secondary" className="font-score tabular">
+                        {team.players.length}/{teamSize}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <Button
         size="lg"

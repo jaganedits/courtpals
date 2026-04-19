@@ -11,6 +11,14 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
   Empty,
@@ -163,64 +171,152 @@ export default function PlayerRegistry({ players, onAdd, onRemove, onUpdate }: P
             regulars
           </p>
           <Separator />
-          {players.map((p, i) => {
-            const isEditing = editingId === p.id
-            return (
-              <Card
-                key={p.id}
-                style={{ animationDelay: `${i * 40}ms` }}
-                className="animate-rise gap-0 border-2 py-0"
-              >
-                <CardContent className="flex items-center gap-3 p-3">
-                  {isEditing ? (
-                    <Input
-                      autoFocus
-                      value={editName}
-                      maxLength={20}
-                      onChange={e => setEditName(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && saveEdit(p)}
-                      onBlur={() => saveEdit(p)}
-                      className="h-9 flex-1 font-display font-semibold"
-                    />
-                  ) : (
-                    <div className="min-w-0 flex-1">
-                      <p
-                        onDoubleClick={() => startEdit(p)}
-                        className="truncate font-display text-base font-extrabold"
-                      >
-                        {p.name}
-                      </p>
-                      <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                        #{(i + 1).toString().padStart(2, '0')}
-                      </p>
-                    </div>
-                  )}
 
-                  {!isEditing && (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Edit ${p.name}`}
-                        onClick={() => startEdit(p)}
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Remove ${p.name}`}
-                        onClick={() => onRemove(p.id)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 />
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
+          {/* Mobile: card list */}
+          <div className="flex flex-col gap-2 lg:hidden">
+            {players.map((p, i) => {
+              const isEditing = editingId === p.id
+              return (
+                <Card
+                  key={p.id}
+                  style={{ animationDelay: `${i * 40}ms` }}
+                  className="animate-rise gap-0 border-2 py-0"
+                >
+                  <CardContent className="flex items-center gap-3 p-3">
+                    {isEditing ? (
+                      <Input
+                        autoFocus
+                        value={editName}
+                        maxLength={20}
+                        onChange={e => setEditName(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && saveEdit(p)}
+                        onBlur={() => saveEdit(p)}
+                        className="h-9 flex-1 font-display font-semibold"
+                      />
+                    ) : (
+                      <div className="min-w-0 flex-1">
+                        <p
+                          onDoubleClick={() => startEdit(p)}
+                          className="truncate font-display text-base font-extrabold"
+                        >
+                          {p.name}
+                        </p>
+                        <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                          #{(i + 1).toString().padStart(2, '0')}
+                        </p>
+                      </div>
+                    )}
+
+                    {!isEditing && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Edit ${p.name}`}
+                          onClick={() => startEdit(p)}
+                        >
+                          <Pencil />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Remove ${p.name}`}
+                          onClick={() => onRemove(p.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 />
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+
+          {/* Desktop: table */}
+          <Card className="hidden overflow-hidden py-0 lg:block">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b-2 border-border">
+                    <TableHead className="w-12 text-center font-display text-[9px] font-bold uppercase tracking-[0.18em]">
+                      #
+                    </TableHead>
+                    <TableHead className="w-14 text-center font-display text-[9px] font-bold uppercase tracking-[0.18em]">
+                      icon
+                    </TableHead>
+                    <TableHead className="font-display text-[9px] font-bold uppercase tracking-[0.18em]">
+                      name
+                    </TableHead>
+                    <TableHead className="w-28 text-right font-display text-[9px] font-bold uppercase tracking-[0.18em]">
+                      actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {players.map((p, i) => {
+                    const isEditing = editingId === p.id
+                    return (
+                      <TableRow key={p.id}>
+                        <TableCell className="text-center font-mono text-xs font-bold tabular text-muted-foreground">
+                          {(i + 1).toString().padStart(2, '0')}
+                        </TableCell>
+                        <TableCell className="text-center text-xl leading-none">
+                          {p.emoji}
+                        </TableCell>
+                        <TableCell>
+                          {isEditing ? (
+                            <Input
+                              autoFocus
+                              value={editName}
+                              maxLength={20}
+                              onChange={e => setEditName(e.target.value)}
+                              onKeyDown={e => e.key === 'Enter' && saveEdit(p)}
+                              onBlur={() => saveEdit(p)}
+                              className="h-9 max-w-xs font-display font-semibold"
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              onDoubleClick={() => startEdit(p)}
+                              onClick={() => startEdit(p)}
+                              className="truncate text-left font-display text-sm font-extrabold hover:text-primary"
+                            >
+                              {p.name}
+                            </button>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {!isEditing && (
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`Edit ${p.name}`}
+                                onClick={() => startEdit(p)}
+                              >
+                                <Pencil />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`Remove ${p.name}`}
+                                onClick={() => onRemove(p.id)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </section>
       )}
     </div>
