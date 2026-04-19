@@ -277,6 +277,41 @@ export function sessionReducer(state: DaySession, action: SessionAction): DaySes
         ),
       }
 
+    case 'RESET_FIXTURE': {
+      const target = state.fixtures.find(f => f.id === action.payload)
+      if (!target) return state
+
+      const cleared = { ...target, status: 'pending' as const, scoreA: 0, scoreB: 0, winnerId: null }
+      let fixtures = state.fixtures.map(f => (f.id === target.id ? cleared : f))
+      let phase: DaySession['phase'] = state.phase
+
+      // Cascade: resetting a RR match while playoffs/done were locked in invalidates
+      // the bracket because RR standings may change. Drop playoff fixtures.
+      if (target.round === 'rr' && (state.phase === 'playoffs' || state.phase === 'done')) {
+        fixtures = fixtures.filter(f => f.round === 'rr')
+        phase = 'active'
+      }
+
+      // Resetting a semi while finals exist (or while 'done') drops the dependent final+3rd.
+      if (target.round === 'semi') {
+        fixtures = fixtures.filter(f => f.round !== 'final' && f.round !== '3rd')
+        if (state.phase === 'done') phase = 'playoffs'
+      }
+
+      // Resetting the final or 3rd-place match while 'done' means the session is no longer done.
+      if ((target.round === 'final' || target.round === '3rd') && state.phase === 'done') {
+        phase = 'playoffs'
+      }
+
+      return {
+        ...state,
+        fixtures,
+        phase,
+        activeFixtureId:
+          state.activeFixtureId === action.payload ? null : state.activeFixtureId,
+      }
+    }
+
     case 'FINISH_FIXTURE': {
       const { fixtureId, scoreA, scoreB, winnerId } = action.payload
       const updated = state.fixtures.map(f =>

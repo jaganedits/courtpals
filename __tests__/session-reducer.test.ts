@@ -264,6 +264,98 @@ describe('sessionReducer', () => {
     })
   })
 
+  describe('RESET_FIXTURE (cascade)', () => {
+    function setupSession(playerCount: number) {
+      let s = initialSession
+      for (let i = 1; i <= playerCount; i++) {
+        s = sessionReducer(s, {
+          type: 'ADD_PLAYER',
+          payload: { id: `p${i}`, name: `P${i}`, emoji: '🏸' },
+        })
+      }
+      s = sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })
+      s = sessionReducer(s, { type: 'START_SESSION' })
+      return s
+    }
+
+    function playAllRR(state: typeof initialSession) {
+      let s = state
+      for (const f of s.fixtures.filter(x => x.round === 'rr' && x.status === 'pending')) {
+        s = sessionReducer(s, { type: 'START_FIXTURE', payload: f.id })
+        s = sessionReducer(s, {
+          type: 'FINISH_FIXTURE',
+          payload: { fixtureId: f.id, scoreA: 21, scoreB: 10, winnerId: f.teamAId },
+        })
+      }
+      return s
+    }
+
+    it('resetting a done RR match during active stays active and only clears that fixture', () => {
+      let s = setupSession(8)
+      const f = s.fixtures[0]
+      s = sessionReducer(s, { type: 'START_FIXTURE', payload: f.id })
+      s = sessionReducer(s, {
+        type: 'FINISH_FIXTURE',
+        payload: { fixtureId: f.id, scoreA: 21, scoreB: 15, winnerId: f.teamAId },
+      })
+      expect(s.fixtures[0].status).toBe('done')
+
+      s = sessionReducer(s, { type: 'RESET_FIXTURE', payload: f.id })
+      expect(s.phase).toBe('active')
+      const updated = s.fixtures.find(x => x.id === f.id)!
+      expect(updated.status).toBe('pending')
+      expect(updated.scoreA).toBe(0)
+      expect(updated.winnerId).toBeNull()
+    })
+
+    it('resetting a done RR match during playoffs drops playoff fixtures back to active', () => {
+      let s = setupSession(8) // 4 teams
+      s = playAllRR(s)
+      expect(s.phase).toBe('playoffs')
+      const rrFixture = s.fixtures.find(x => x.round === 'rr')!
+      s = sessionReducer(s, { type: 'RESET_FIXTURE', payload: rrFixture.id })
+      expect(s.phase).toBe('active')
+      expect(s.fixtures.every(x => x.round === 'rr')).toBe(true)
+    })
+
+    it('resetting a done semi drops the Final + 3rd-place', () => {
+      let s = setupSession(12) // 6 teams
+      s = playAllRR(s)
+      const semis = s.fixtures.filter(x => x.round === 'semi')
+      for (const semi of semis) {
+        s = sessionReducer(s, { type: 'START_FIXTURE', payload: semi.id })
+        s = sessionReducer(s, {
+          type: 'FINISH_FIXTURE',
+          payload: { fixtureId: semi.id, scoreA: 21, scoreB: 15, winnerId: semi.teamAId },
+        })
+      }
+      expect(s.fixtures.some(x => x.round === 'final')).toBe(true)
+      s = sessionReducer(s, { type: 'RESET_FIXTURE', payload: semis[0].id })
+      expect(s.fixtures.some(x => x.round === 'final')).toBe(false)
+      expect(s.fixtures.some(x => x.round === '3rd')).toBe(false)
+      expect(s.phase).toBe('playoffs')
+    })
+
+    it('resetting the final while done flips phase back to playoffs', () => {
+      let s = setupSession(8) // 4 teams -> Final + 3rd seed directly
+      s = playAllRR(s)
+      // finish both playoff matches
+      for (const fx of s.fixtures.filter(x => x.round !== 'rr' && x.status === 'pending')) {
+        s = sessionReducer(s, { type: 'START_FIXTURE', payload: fx.id })
+        s = sessionReducer(s, {
+          type: 'FINISH_FIXTURE',
+          payload: { fixtureId: fx.id, scoreA: 21, scoreB: 15, winnerId: fx.teamAId },
+        })
+      }
+      expect(s.phase).toBe('done')
+
+      const final = s.fixtures.find(x => x.round === 'final')!
+      s = sessionReducer(s, { type: 'RESET_FIXTURE', payload: final.id })
+      expect(s.phase).toBe('playoffs')
+      expect(s.fixtures.find(x => x.id === final.id)?.status).toBe('pending')
+    })
+  })
+
   describe('UPDATE_TEAM_NAME', () => {
     function built() {
       let s = withPlayers(p1, p2, p3, p4)

@@ -285,6 +285,7 @@ export default function LeagueHub({
           fixtures={session.fixtures}
           teams={session.teams}
           onStartFixture={handleStartFixture}
+          onResetFixture={fid => dispatch({ type: 'RESET_FIXTURE', payload: fid })}
         />
       )}
 

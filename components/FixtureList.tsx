@@ -3,7 +3,19 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Trophy } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { RotateCcw, Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { rankStandings } from '@/hooks/useSession'
 import type { Fixture, Round, SessionTeam } from '@/types'
@@ -43,6 +55,7 @@ interface Props {
   fixtures: Fixture[]
   teams: SessionTeam[]
   onStartFixture: (fixtureId: string) => void
+  onResetFixture?: (fixtureId: string) => void
 }
 
 function teamIndex(teams: SessionTeam[], id: string): number {
@@ -53,7 +66,7 @@ function teamById(teams: SessionTeam[], id: string): SessionTeam {
   return teams.find(t => t.id === id) ?? { id, name: '—', players: [] }
 }
 
-export default function FixtureList({ fixtures, teams, onStartFixture }: Props) {
+export default function FixtureList({ fixtures, teams, onStartFixture, onResetFixture }: Props) {
   const done = fixtures.filter(f => f.status === 'done').length
   const total = fixtures.length
   const progressPct = total === 0 ? 0 : (done / total) * 100
@@ -175,12 +188,49 @@ export default function FixtureList({ fixtures, teams, onStartFixture }: Props) 
                             live
                           </Badge>
                         ) : isDone ? (
-                          <Badge
-                            variant="secondary"
-                            className="font-display text-[9px] uppercase tracking-[0.18em] text-chart-2 border-chart-2/30 bg-chart-2/10"
-                          >
-                            final
-                          </Badge>
+                          <div className="flex items-center gap-1">
+                            <Badge
+                              variant="secondary"
+                              className="font-display text-[9px] uppercase tracking-[0.18em] text-chart-2 border-chart-2/30 bg-chart-2/10"
+                            >
+                              final
+                            </Badge>
+                            {onResetFixture && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    aria-label="Reset this match"
+                                    onClick={e => e.stopPropagation()}
+                                    className="size-6 text-muted-foreground hover:text-destructive"
+                                  >
+                                    <RotateCcw className="size-3.5" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="font-display">
+                                      Reset this match?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {f.round === 'rr'
+                                        ? 'The score and winner will be cleared. Any playoff fixtures that depend on the RR standings will be discarded so you can re-seed.'
+                                        : f.round === 'semi'
+                                        ? 'The semi\u2019s result will be cleared. The Final and 3rd-place match (if generated) will be removed, and you can replay this semi.'
+                                        : 'The match will be cleared and the session returns to playoffs so you can replay it.'}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onResetFixture(f.id)}>
+                                      Reset match
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
                         ) : (
                           <Badge variant="outline" className="font-display text-[10px] uppercase tracking-[0.18em]">
                             vs
