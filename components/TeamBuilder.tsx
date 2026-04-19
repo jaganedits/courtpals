@@ -1,27 +1,51 @@
 'use client'
 
 import { useState } from 'react'
-import type { SessionTeam, SessionAction } from '@/types'
+import { Dices } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import type { SessionTeam, SessionAction, TeamSize } from '@/types'
 
 const TEAM_PALETTE = [
-  { border: 'border-[var(--color-team-a)]', glow: 'shadow-[0_0_0_2px_var(--color-team-a),0_0_24px_-4px_rgba(255,122,69,0.5)]', bar: 'bg-[var(--color-team-a)]', dot: 'var(--color-team-a)' },
-  { border: 'border-[var(--color-team-b)]', glow: 'shadow-[0_0_0_2px_var(--color-team-b),0_0_24px_-4px_rgba(61,220,151,0.5)]', bar: 'bg-[var(--color-team-b)]', dot: 'var(--color-team-b)' },
-  { border: 'border-[var(--color-team-c)]', glow: 'shadow-[0_0_0_2px_var(--color-team-c),0_0_24px_-4px_rgba(192,132,252,0.5)]', bar: 'bg-[var(--color-team-c)]', dot: 'var(--color-team-c)' },
-  { border: 'border-[var(--color-team-d)]', glow: 'shadow-[0_0_0_2px_var(--color-team-d),0_0_24px_-4px_rgba(255,93,143,0.5)]', bar: 'bg-[var(--color-team-d)]', dot: 'var(--color-team-d)' },
-  { border: 'border-[var(--color-team-e)]', glow: 'shadow-[0_0_0_2px_var(--color-team-e),0_0_24px_-4px_rgba(96,165,250,0.5)]', bar: 'bg-[var(--color-team-e)]', dot: 'var(--color-team-e)' },
-  { border: 'border-[var(--color-team-f)]', glow: 'shadow-[0_0_0_2px_var(--color-team-f),0_0_24px_-4px_rgba(251,191,36,0.5)]', bar: 'bg-[var(--color-team-f)]', dot: 'var(--color-team-f)' },
+  { color: 'var(--color-team-a)' },
+  { color: 'var(--color-team-b)' },
+  { color: 'var(--color-team-c)' },
+  { color: 'var(--color-team-d)' },
+  { color: 'var(--color-team-e)' },
+  { color: 'var(--color-team-f)' },
 ]
 
 interface Props {
   teams: SessionTeam[]
+  teamSize: TeamSize
   dispatch: React.Dispatch<SessionAction>
   onReRandomize: () => void
   onStartSession: () => void
 }
 
-export default function TeamBuilder({ teams, dispatch, onReRandomize, onStartSession }: Props) {
+export default function TeamBuilder({ teams, teamSize, dispatch, onReRandomize, onStartSession }: Props) {
   const [dragOverTeamId, setDragOverTeamId] = useState<string | null>(null)
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null)
+  const [draftName, setDraftName] = useState('')
   const matchCount = teams.length >= 2 ? (teams.length * (teams.length - 1)) / 2 : 0
+
+  function beginEdit(team: SessionTeam) {
+    setEditingTeamId(team.id)
+    setDraftName(team.name)
+  }
+
+  function commitEdit(id: string) {
+    const name = draftName.trim()
+    if (name) dispatch({ type: 'UPDATE_TEAM_NAME', payload: { id, name } })
+    setEditingTeamId(null)
+  }
+
+  function cancelEdit() {
+    setEditingTeamId(null)
+  }
 
   function handleDrop(e: React.DragEvent, targetTeamId: string) {
     e.preventDefault()
@@ -39,34 +63,28 @@ export default function TeamBuilder({ teams, dispatch, onReRandomize, onStartSes
 
   return (
     <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
-      {/* Header */}
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-display text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-ink-dim)]">
+          <p className="font-display text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
             the draft
           </p>
-          <h1 className="font-display text-3xl font-extrabold leading-none text-[var(--color-chalk)]">
-            Teams
-          </h1>
-          <p className="mt-1.5 text-sm text-[var(--color-ink-soft)]">
+          <h1 className="font-display text-3xl font-extrabold leading-none">Teams</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
             Drag players to shuffle, or re-roll the whole thing.
           </p>
         </div>
-        <button
-          onClick={onReRandomize}
-          className="shrink-0 rounded-xl border-2 border-[var(--color-line)] bg-[var(--color-card)] px-3 py-2 font-display text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--color-ink-soft)] transition-all hover:border-[var(--color-lime)]/40 hover:text-[var(--color-lime)] active:scale-95"
-        >
-          🎲 Re-roll
-        </button>
+        <Button variant="outline" size="sm" onClick={onReRandomize} className="shrink-0">
+          <Dices data-icon="inline-start" />
+          Re-roll
+        </Button>
       </header>
 
-      {/* Team cards */}
       <div className="grid grid-cols-2 gap-3">
         {teams.map((team, ti) => {
           const palette = TEAM_PALETTE[ti % TEAM_PALETTE.length]
           const isOver = dragOverTeamId === team.id
           return (
-            <div
+            <Card
               key={team.id}
               onDragOver={e => {
                 e.preventDefault()
@@ -74,65 +92,92 @@ export default function TeamBuilder({ teams, dispatch, onReRandomize, onStartSes
               }}
               onDragLeave={() => setDragOverTeamId(prev => (prev === team.id ? null : prev))}
               onDrop={e => handleDrop(e, team.id)}
-              className={`relative min-h-[148px] overflow-hidden rounded-2xl border-2 bg-[var(--color-card)] p-3 transition-all ${palette.border} ${isOver ? palette.glow : ''}`}
+              className={cn(
+                'relative min-h-37 overflow-hidden border-2 py-0 transition-all',
+                isOver && 'scale-[1.02]',
+              )}
+              style={{
+                borderColor: palette.color,
+                boxShadow: isOver ? `0 0 0 2px ${palette.color}, 0 0 24px -4px ${palette.color}80` : undefined,
+              }}
             >
-              {/* Color bar header */}
-              <div className="mb-3 flex items-center gap-2">
-                <span className={`h-2.5 w-2.5 rounded-full ${palette.bar}`} />
-                <span className="font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-[var(--color-chalk)]">
-                  {team.name}
-                </span>
-                <span className="ml-auto font-score text-[11px] font-bold text-[var(--color-ink-dim)] tabular">
-                  {team.players.length}/2
-                </span>
-              </div>
+              <CardContent className="flex flex-col gap-3 p-3">
+                <div className="flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="size-2.5 rounded-full"
+                    style={{ background: palette.color }}
+                  />
+                  {editingTeamId === team.id ? (
+                    <Input
+                      autoFocus
+                      value={draftName}
+                      onChange={e => setDraftName(e.target.value)}
+                      onBlur={() => commitEdit(team.id)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') commitEdit(team.id)
+                        if (e.key === 'Escape') cancelEdit()
+                      }}
+                      maxLength={24}
+                      className="h-7 min-w-0 flex-1 border-primary/60 px-2 font-display text-[11px] font-extrabold uppercase tracking-[0.18em]"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => beginEdit(team)}
+                      className="min-w-0 truncate rounded-sm font-display text-[11px] font-extrabold uppercase tracking-[0.18em] hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    >
+                      {team.name}
+                    </button>
+                  )}
+                  <Badge variant="secondary" className="ml-auto font-score tabular">
+                    {team.players.length}/{teamSize}
+                  </Badge>
+                </div>
 
-              {/* Player chips */}
-              <div className="flex flex-col gap-1.5">
-                {team.players.map(p => (
-                  <div
-                    key={p.id}
-                    draggable
-                    onDragStart={e => handleDragStart(e, p.id)}
-                    className="flex cursor-grab items-center gap-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-raised)] px-2 py-1.5 transition-transform hover:border-[var(--color-lime)]/40 active:cursor-grabbing active:scale-[0.98]"
-                  >
-                    <span className="text-base leading-none">{p.emoji}</span>
-                    <span className="truncate font-display text-sm font-bold text-[var(--color-chalk)]">
-                      {p.name}
-                    </span>
-                  </div>
-                ))}
-                {team.players.length === 0 && (
-                  <div className="rounded-lg border border-dashed border-[var(--color-line)] py-3 text-center font-display text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink-dim)]">
-                    drop here
-                  </div>
-                )}
-              </div>
+                <div className="flex flex-col gap-1.5">
+                  {team.players.map(p => (
+                    <div
+                      key={p.id}
+                      draggable
+                      onDragStart={e => handleDragStart(e, p.id)}
+                      className="flex cursor-grab items-center rounded-lg border border-border bg-secondary px-2 py-1.5 transition-transform hover:border-primary/40 active:cursor-grabbing active:scale-[0.98]"
+                    >
+                      <span className="truncate font-display text-sm font-bold">{p.name}</span>
+                    </div>
+                  ))}
+                  {Array.from({ length: Math.max(0, teamSize - team.players.length) }).map((_, i) => (
+                    <div
+                      key={`slot-${i}`}
+                      className="rounded-lg border border-dashed border-border py-3 text-center font-display text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
+                    >
+                      drop here
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
 
-              {/* Decorative corner */}
               <span
                 aria-hidden
-                className="absolute -right-6 -bottom-6 h-14 w-14 rounded-full opacity-10"
-                style={{ background: `radial-gradient(circle, ${palette.dot} 0%, transparent 70%)` }}
+                className="pointer-events-none absolute -right-6 -bottom-6 size-14 rounded-full opacity-10"
+                style={{ background: `radial-gradient(circle, ${palette.color} 0%, transparent 70%)` }}
               />
-            </div>
+            </Card>
           )
         })}
       </div>
 
-      {/* Start CTA */}
-      <button
+      <Button
+        size="lg"
         onClick={onStartSession}
         disabled={teams.length < 2}
-        className="sticky bottom-[calc(env(safe-area-inset-bottom)+72px)] z-30 flex items-center justify-between rounded-2xl border-2 border-[var(--color-lime)] bg-[var(--color-lime)] px-5 py-4 text-[var(--color-bg)] shadow-brut transition-all disabled:cursor-not-allowed disabled:border-[var(--color-line)] disabled:bg-[var(--color-card)] disabled:text-[var(--color-ink-dim)] disabled:shadow-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+        className="sticky bottom-[calc(env(safe-area-inset-bottom)+72px)] z-30 h-auto justify-between rounded-2xl border-2 border-primary px-5 py-4 shadow-brut active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:shadow-none disabled:border-border"
       >
-        <span className="flex flex-col items-start">
+        <span className="flex flex-col items-start leading-none">
           <span className="font-display text-xs font-bold uppercase tracking-[0.18em] opacity-70">
-            let's play
+            let&apos;s play
           </span>
-          <span className="font-display text-lg font-extrabold leading-none">
-            Start tournament
-          </span>
+          <span className="font-display text-lg font-extrabold">Start tournament</span>
         </span>
         <span className="font-score flex items-baseline gap-1">
           <span className="text-2xl font-extrabold leading-none tabular">{matchCount}</span>
@@ -140,7 +185,7 @@ export default function TeamBuilder({ teams, dispatch, onReRandomize, onStartSes
             matches
           </span>
         </span>
-      </button>
+      </Button>
     </div>
   )
 }
