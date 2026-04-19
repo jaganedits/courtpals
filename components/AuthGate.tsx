@@ -1,11 +1,12 @@
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, useMemo } from 'react'
 import { LogIn, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { isFirebaseConfigured } from '@/lib/firebase'
 import { useAuth } from '@/hooks/useAuth'
 import { useCourt } from '@/hooks/useCourt'
+import { readSessionCache } from '@/lib/local-cache'
 import CourtBootstrapDialog from '@/components/CourtBootstrapDialog'
 
 interface Props {
@@ -25,12 +26,27 @@ export default function AuthGate({ children }: Props) {
 function FirebaseGate({ children }: { children: ReactNode }) {
   const auth = useAuth()
   const court = useCourt(auth.user)
+  // Only read the cache once on mount — it's the optimistic snapshot that
+  // lets us skip the loading spinner if the last session had a court.
+  const initialCache = useMemo(() => readSessionCache(), [])
+
+  // Optimistic path: we have a cached signed-in user with a court from a
+  // previous session. Render the app immediately and let Firebase revalidate
+  // in the background.
+  const canRenderOptimistically = Boolean(
+    initialCache?.uid && initialCache.courtId && auth.loading,
+  )
+  if (canRenderOptimistically) return <>{children}</>
 
   if (auth.loading) return <LoadingShell />
 
   if (!auth.user) {
     return <LoginPage onSignIn={auth.signInWithGoogle} error={auth.error} />
   }
+
+  // Mid-reload: auth confirmed + we have a cached courtId, but Firestore
+  // hasn't finished its first snapshot yet. Keep showing the app.
+  if (court.loading && initialCache?.courtId) return <>{children}</>
 
   if (court.loading) return <LoadingShell />
 

@@ -2,7 +2,13 @@
 
 import { type FirebaseApp, type FirebaseOptions, getApps, initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth'
-import { getFirestore, type Firestore } from 'firebase/firestore'
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  type Firestore,
+} from 'firebase/firestore'
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -45,7 +51,23 @@ export function firestore(): Firestore | null {
   if (!app) return null
   if (!_db) {
     const dbId = process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_DATABASE_ID
-    _db = dbId && dbId !== '(default)' ? getFirestore(app, dbId) : getFirestore(app)
+    // Persistent IndexedDB cache makes subsequent loads serve from local data
+    // instantly; snapshots are revalidated over the network in the background.
+    // initializeFirestore can only be called once per app — fall back to
+    // getFirestore on any retry (HMR, etc.).
+    try {
+      _db = initializeFirestore(
+        app,
+        {
+          localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager(),
+          }),
+        },
+        dbId && dbId !== '(default)' ? dbId : undefined,
+      )
+    } catch {
+      _db = dbId && dbId !== '(default)' ? getFirestore(app, dbId) : getFirestore(app)
+    }
   }
   return _db
 }
