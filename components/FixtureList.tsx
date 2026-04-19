@@ -167,7 +167,6 @@ export default function FixtureList({
                     canStart && 'cursor-pointer hover:border-primary/40 active:scale-[0.99]',
                     !canStart && !isActive && 'opacity-80',
                     group.round !== 'rr' && !isActive && 'border-primary/40',
-                    mine && !isActive && 'border-primary/70 ring-1 ring-primary/30',
                   )}
                 >
                   <CardContent className="flex items-stretch p-0">
