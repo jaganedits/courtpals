@@ -218,7 +218,19 @@ export default function Page() {
             onUpdate={updatePlayer}
           />
         )}
-        {tab === 'score' && <ScoreBoard state={match} dispatch={matchDispatch} />}
+        {tab === 'score' && (
+          <ScoreBoard
+            state={match}
+            dispatch={matchDispatch}
+            onAbandon={() => {
+              if (match.fixtureId) {
+                sessionDispatch({ type: 'ABANDON_FIXTURE', payload: match.fixtureId })
+              }
+              matchDispatch({ type: 'RESET' })
+              setTab('league')
+            }}
+          />
+        )}
         {tab === 'history' && (
           <HistoryCalendar history={history} onClearHistory={clearHistory} />
         )}

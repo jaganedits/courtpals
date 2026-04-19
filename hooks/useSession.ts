@@ -259,6 +259,18 @@ export function sessionReducer(state: DaySession, action: SessionAction): DaySes
         ),
       }
 
+    case 'ABANDON_FIXTURE':
+      return {
+        ...state,
+        activeFixtureId:
+          state.activeFixtureId === action.payload ? null : state.activeFixtureId,
+        fixtures: state.fixtures.map(f =>
+          f.id === action.payload
+            ? { ...f, status: 'pending', scoreA: 0, scoreB: 0, winnerId: null }
+            : f,
+        ),
+      }
+
     case 'FINISH_FIXTURE': {
       const { fixtureId, scoreA, scoreB, winnerId } = action.payload
       const updated = state.fixtures.map(f =>

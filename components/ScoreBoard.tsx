@@ -46,9 +46,10 @@ const SIDES: {
 interface Props {
   state: MatchState
   dispatch: React.Dispatch<MatchAction>
+  onAbandon: () => void
 }
 
-export default function ScoreBoard({ state, dispatch }: Props) {
+export default function ScoreBoard({ state, dispatch, onAbandon }: Props) {
   const isPlaying = state.phase === 'playing'
   const isIdle = state.phase === 'idle'
   const lastScoredRef = useRef<[number | null, number | null]>([null, null])
@@ -189,9 +190,7 @@ export default function ScoreBoard({ state, dispatch }: Props) {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Keep playing</AlertDialogCancel>
-              <AlertDialogAction onClick={() => dispatch({ type: 'RESET' })}>
-                Abandon match
-              </AlertDialogAction>
+              <AlertDialogAction onClick={onAbandon}>Abandon match</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

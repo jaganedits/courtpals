@@ -52,6 +52,7 @@ export type SessionAction =
   | { type: 'ASSIGN_PLAYER_TO_TEAM'; payload: { playerId: string; teamId: string } }
   | { type: 'START_SESSION' }
   | { type: 'START_FIXTURE'; payload: string }
+  | { type: 'ABANDON_FIXTURE'; payload: string }
   | { type: 'FINISH_FIXTURE'; payload: { fixtureId: string; scoreA: number; scoreB: number; winnerId: string } }
   | { type: 'RESET_SESSION' }
   | { type: 'UPDATE_TEAM_NAME'; payload: { id: string; name: string } }
