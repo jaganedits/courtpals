@@ -502,27 +502,36 @@ export function useSession(opts: UseSessionOptions = {}) {
   }, [courtId])
 
   // Mirror local state to Firestore on every change. The host of the
-  // tournament (state.createdBy === uid) always writes; court admins also
-  // have write privileges regardless of who started the tournament.
-  // Track whether the remote doc currently represents a live tournament so we
-  // know when to deleteDoc vs setDoc.
+  // tournament always writes; court admins also have write privileges
+  // regardless of who started the tournament.
+  // Track whether the remote doc currently represents a live tournament so
+  // we know when to deleteDoc vs setDoc, plus the last known creator uid so
+  // we can still recognise "I was the host" after the local reset clears
+  // state.createdBy.
   const hadRemoteTournamentRef = useRef(false)
+  const lastCreatorRef = useRef<string>('')
   useEffect(() => {
     if (!courtId || !uid) return
     if (skipNextWriteRef.current) {
       skipNextWriteRef.current = false
       hadRemoteTournamentRef.current = Boolean(state.createdBy)
+      if (state.createdBy) lastCreatorRef.current = state.createdBy
+      else lastCreatorRef.current = ''
       return
     }
     const db = firestore()
     if (!db) return
     const ref = doc(db, 'courts', courtId, 'tournaments', 'current')
-    const amHost = state.createdBy === uid
-    const canWrite = amHost || isAdmin
     // A session with no createdBy is a blank slate — RESET_SESSION uses this
     // shape too. Don't use state.id === 'session-initial' because the reducer
     // mints a fresh uid on reset.
     const isBlank = !state.createdBy
+    // After a local reset state.createdBy is empty, so fall back to the last
+    // known creator to decide whether I was the host of the remote tournament
+    // about to be torn down.
+    const effectiveCreator = state.createdBy || lastCreatorRef.current
+    const amHost = effectiveCreator !== '' && effectiveCreator === uid
+    const canWrite = amHost || isAdmin
 
     if (isBlank) {
       if (hadRemoteTournamentRef.current && canWrite) {
@@ -530,10 +539,11 @@ export function useSession(opts: UseSessionOptions = {}) {
           console.error(
             '[courtpals] failed to delete /tournaments/current:',
             err?.message ?? err,
-            '— republish firestore.rules so admins get delete permission.',
+            '— republish firestore.rules so host + admin get delete permission.',
           )
         })
         hadRemoteTournamentRef.current = false
+        lastCreatorRef.current = ''
       }
       return
     }
@@ -546,6 +556,7 @@ export function useSession(opts: UseSessionOptions = {}) {
       )
     })
     hadRemoteTournamentRef.current = true
+    lastCreatorRef.current = state.createdBy
   }, [state, courtId, uid, isAdmin])
 
   return { state, dispatch, ready, error }
