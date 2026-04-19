@@ -43,7 +43,7 @@ function roundNumber(round: Round, indexInRound: number): string {
     case 'rr':
       return (indexInRound + 1).toString().padStart(2, '0')
     case 'semi':
-      return `S${indexInRound + 1}`
+      return `SF${indexInRound + 1}`
     case 'final':
       return 'F'
     case '3rd':
@@ -80,11 +80,6 @@ export default function FixtureList({
   const total = fixtures.length
   const progressPct = total === 0 ? 0 : (done / total) * 100
 
-  const standings = rankStandings(teams, fixtures)
-  const anyRRDone = standings.some(r => r.played > 0)
-  const rankMap = new Map<string, number>()
-  standings.forEach((row, i) => rankMap.set(row.team.id, i + 1))
-
   const grouped = ROUND_ORDER
     .map(round => ({ round, list: fixtures.filter(f => f.round === round) }))
     .filter(g => g.list.length > 0)
@@ -93,8 +88,7 @@ export default function FixtureList({
 
   return (
     <div className="flex flex-col gap-6 px-4 pt-6 pb-8">
-      {/* ── HEADER ────────────────────────────────────────────── */}
-      <header className="flex flex-col gap-2.5">
+      <header className="flex flex-col gap-2">
         <div className="flex items-end justify-between gap-4">
           <div>
             <p className="font-mono text-[9px] font-bold uppercase tracking-[0.32em] text-muted-foreground">
@@ -105,13 +99,9 @@ export default function FixtureList({
             </h1>
           </div>
           <div className="flex items-baseline gap-1 font-score tabular">
-            <span className="text-2xl font-extrabold text-foreground">
-              {done.toString().padStart(2, '0')}
-            </span>
-            <span className="text-lg font-bold text-muted-foreground/60">/</span>
-            <span className="text-lg font-bold text-muted-foreground">
-              {total.toString().padStart(2, '0')}
-            </span>
+            <span className="text-2xl font-extrabold">{done.toString().padStart(2, '0')}</span>
+            <span className="text-base font-bold text-muted-foreground/50">/</span>
+            <span className="text-base font-bold text-muted-foreground">{total.toString().padStart(2, '0')}</span>
           </div>
         </div>
         <Progress value={progressPct} className="h-[2px]" />
@@ -149,25 +139,26 @@ export default function FixtureList({
               </span>
             </div>
 
-            <div className="flex flex-col">
-              {group.list.map((f, i) => (
-                <MatchRow
-                  key={f.id}
-                  fixture={f}
-                  index={i}
-                  teams={teams}
-                  rankMap={rankMap}
-                  anyRRDone={anyRRDone}
-                  code={roundNumber(group.round, i)}
-                  isPlayoff={isPlayoff}
-                  canEdit={canEdit}
-                  myTeamId={myTeamId}
-                  onStart={onStartFixture}
-                  onReset={onResetFixture}
-                  animationDelay={(gi * 4 + i) * 40}
-                />
-              ))}
-            </div>
+            <Card className="overflow-hidden rounded-md border border-border/40 bg-card py-0">
+              <CardContent className="p-0">
+                {group.list.map((f, i) => (
+                  <MatchRow
+                    key={f.id}
+                    fixture={f}
+                    teams={teams}
+                    code={roundNumber(group.round, i)}
+                    isPlayoff={isPlayoff}
+                    canEdit={canEdit}
+                    myTeamId={myTeamId}
+                    onStart={onStartFixture}
+                    onReset={onResetFixture}
+                    isFirst={i === 0}
+                    isLast={i === group.list.length - 1}
+                    animationDelay={(gi * 4 + i) * 40}
+                  />
+                ))}
+              </CardContent>
+            </Card>
           </section>
         )
       })}
@@ -175,33 +166,31 @@ export default function FixtureList({
   )
 }
 
-// ─── Match row (scoreboard panel) ────────────────────────────────────────────
+// ─── Match row ───────────────────────────────────────────────────────────────
 
 function MatchRow({
   fixture: f,
-  index,
   teams,
-  rankMap,
-  anyRRDone,
   code,
   isPlayoff,
   canEdit,
   myTeamId,
   onStart,
   onReset,
+  isFirst,
+  isLast,
   animationDelay,
 }: {
   fixture: Fixture
-  index: number
   teams: SessionTeam[]
-  rankMap: Map<string, number>
-  anyRRDone: boolean
   code: string
   isPlayoff: boolean
   canEdit: boolean
   myTeamId: string | null
   onStart: (id: string) => void
   onReset?: (id: string) => void
+  isFirst: boolean
+  isLast: boolean
   animationDelay: number
 }) {
   const tA = teamById(teams, f.teamAId)
@@ -218,75 +207,71 @@ function MatchRow({
   const mine = Boolean(myTeamId && (f.teamAId === myTeamId || f.teamBId === myTeamId))
 
   return (
-    <Card
+    <div
       onClick={() => canStart && onStart(f.id)}
       role={canStart ? 'button' : undefined}
       aria-disabled={!canStart}
       style={{ animationDelay: `${animationDelay}ms` }}
       className={cn(
-        'animate-rise relative -mb-px overflow-hidden rounded-none border border-border/30 bg-card py-0 transition-colors',
-        'first:rounded-t-md last:rounded-b-md last:mb-0',
-        canStart && 'cursor-pointer hover:bg-background hover:z-10 hover:border-primary/50',
-        isActive && 'z-10 border-destructive/80 bg-destructive/[0.04]',
-        mine && !isActive && 'bg-primary/[0.04]',
+        'animate-rise relative grid grid-cols-[auto_1fr_auto_1fr_auto] items-center gap-4 px-4 py-3',
+        !isFirst && 'border-t border-border/25',
+        canStart && 'cursor-pointer transition-colors hover:bg-background/50',
+        isActive && 'bg-destructive/5',
+        mine && !isActive && 'bg-primary/5',
       )}
     >
-      {/* Team colour flags at the extreme edges (not full pillars) */}
-      <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-1" style={{ background: colorA }} />
-      <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-1" style={{ background: colorB }} />
+      {/* Match code (left) */}
+      <div className="flex flex-col items-start">
+        <span className="font-mono text-[9px] font-bold uppercase tracking-[0.22em] text-muted-foreground/60">
+          match
+        </span>
+        <span
+          className={cn(
+            'font-score text-lg font-extrabold leading-none tabular',
+            isPlayoff ? 'text-primary' : 'text-foreground',
+          )}
+        >
+          {code}
+        </span>
+      </div>
 
-      <CardContent className="relative grid grid-cols-[56px_1fr_auto_1fr_auto] items-center gap-3 p-3 pl-4 pr-4">
-        {/* Match code */}
-        <div className="flex flex-col items-start gap-0.5 border-r border-border/30 pr-3">
-          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.22em] text-muted-foreground/70">
-            match
-          </span>
-          <span
-            className={cn(
-              'font-score text-xl font-extrabold leading-none tabular',
-              isPlayoff ? 'text-primary' : 'text-foreground',
-            )}
-          >
-            {code}
-          </span>
-        </div>
+      {/* Team A */}
+      <TeamCell
+        team={tA}
+        players={tA.players}
+        color={colorA}
+        align="left"
+        winner={isWinnerA}
+        loser={isDone && !isWinnerA}
+        isMine={mine && f.teamAId === myTeamId}
+      />
 
-        <TeamCell
-          team={tA}
-          players={tA.players}
-          color={colorA}
-          align="left"
-          rank={anyRRDone ? rankMap.get(f.teamAId) ?? null : null}
-          winner={isWinnerA}
-          loser={isDone && !isWinnerA}
-          isMine={mine && f.teamAId === myTeamId}
-        />
+      {/* Centre scoreline */}
+      <Scoreline
+        scoreA={isDone ? f.scoreA : null}
+        scoreB={isDone ? f.scoreB : null}
+        winnerSide={isWinnerA ? 'A' : isWinnerB ? 'B' : null}
+        isActive={isActive}
+        isDone={isDone}
+        canEdit={canEdit}
+        onReset={onReset ? () => onReset(f.id) : undefined}
+        round={f.round}
+      />
 
-        <Scoreline
-          scoreA={isDone ? f.scoreA : null}
-          scoreB={isDone ? f.scoreB : null}
-          winnerSide={isWinnerA ? 'A' : isWinnerB ? 'B' : null}
-          isActive={isActive}
-          isDone={isDone}
-          canEdit={canEdit}
-          onReset={onReset ? () => onReset(f.id) : undefined}
-          round={f.round}
-        />
+      {/* Team B */}
+      <TeamCell
+        team={tB}
+        players={tB.players}
+        color={colorB}
+        align="right"
+        winner={isWinnerB}
+        loser={isDone && !isWinnerB}
+        isMine={mine && f.teamBId === myTeamId}
+      />
 
-        <TeamCell
-          team={tB}
-          players={tB.players}
-          color={colorB}
-          align="right"
-          rank={anyRRDone ? rankMap.get(f.teamBId) ?? null : null}
-          winner={isWinnerB}
-          loser={isDone && !isWinnerB}
-          isMine={mine && f.teamBId === myTeamId}
-        />
-
-        <StatusPill isActive={isActive} isDone={isDone} mine={mine} canStart={canStart} />
-      </CardContent>
-    </Card>
+      {/* Status pill (right) */}
+      <StatusPill isActive={isActive} isDone={isDone} mine={mine} canStart={canStart} />
+    </div>
   )
 }
 
@@ -297,7 +282,6 @@ function TeamCell({
   players,
   color,
   align,
-  rank,
   winner,
   loser,
   isMine,
@@ -306,7 +290,6 @@ function TeamCell({
   players: SessionPlayer[]
   color: string
   align: 'left' | 'right'
-  rank: number | null
   winner: boolean
   loser: boolean
   isMine: boolean
@@ -316,7 +299,7 @@ function TeamCell({
       className={cn(
         'flex min-w-0 flex-col gap-1',
         align === 'right' && 'items-end text-right',
-        loser && 'opacity-55',
+        loser && 'opacity-50',
       )}
     >
       <div
@@ -325,22 +308,9 @@ function TeamCell({
           align === 'right' && 'flex-row-reverse',
         )}
       >
-        {rank !== null && (
-          <span
-            className={cn(
-              'font-mono inline-flex h-[14px] min-w-[14px] items-center justify-center border px-0.5 text-[9px] font-extrabold tabular leading-none',
-              rank === 1
-                ? 'border-primary/50 bg-primary/10 text-primary'
-                : 'border-border/50 text-muted-foreground',
-            )}
-          >
-            {rank}
-          </span>
-        )}
         <h3
           className={cn(
             'font-display truncate text-base font-extrabold leading-none tracking-tight',
-            winner && 'text-foreground',
           )}
         >
           {team.name}
@@ -366,7 +336,7 @@ function TeamCell({
   )
 }
 
-// ─── Center scoreline ────────────────────────────────────────────────────────
+// ─── Centre scoreline ────────────────────────────────────────────────────────
 
 function Scoreline({
   scoreA,
@@ -389,12 +359,12 @@ function Scoreline({
 }) {
   if (isActive) {
     return (
-      <div className="flex min-w-[80px] flex-col items-center gap-0.5 rounded-sm border border-destructive/40 bg-destructive/10 px-2 py-1">
+      <div className="flex items-center gap-2">
         <span className="relative flex size-1.5">
           <span className="absolute inline-flex size-1.5 animate-ping rounded-full bg-destructive opacity-75" />
           <span className="relative inline-flex size-1.5 rounded-full bg-destructive" />
         </span>
-        <span className="font-mono text-[9px] font-extrabold uppercase tracking-[0.28em] text-destructive">
+        <span className="font-mono text-[10px] font-extrabold uppercase tracking-[0.3em] text-destructive">
           LIVE
         </span>
       </div>
@@ -403,20 +373,20 @@ function Scoreline({
 
   if (isDone && scoreA !== null && scoreB !== null) {
     return (
-      <div className="flex items-center gap-1 rounded-sm border border-border/50 bg-background/60 px-3 py-1">
+      <div className="flex items-center gap-2">
         <span
           className={cn(
             'font-score text-2xl font-extrabold leading-none tabular',
-            winnerSide === 'A' ? 'text-foreground' : 'text-muted-foreground/60',
+            winnerSide === 'A' ? 'text-foreground' : 'text-muted-foreground/50',
           )}
         >
           {scoreA}
         </span>
-        <span className="font-score text-sm font-bold text-muted-foreground/40">:</span>
+        <span className="font-score text-base font-bold text-muted-foreground/40">–</span>
         <span
           className={cn(
             'font-score text-2xl font-extrabold leading-none tabular',
-            winnerSide === 'B' ? 'text-foreground' : 'text-muted-foreground/60',
+            winnerSide === 'B' ? 'text-foreground' : 'text-muted-foreground/50',
           )}
         >
           {scoreB}
@@ -429,7 +399,7 @@ function Scoreline({
                 size="icon-sm"
                 aria-label="Reset this match"
                 onClick={e => e.stopPropagation()}
-                className="ml-1 size-5 text-muted-foreground hover:text-destructive"
+                className="ml-1 size-5 text-muted-foreground/60 hover:text-destructive"
               >
                 <RotateCcw className="size-3" />
               </Button>
@@ -457,13 +427,13 @@ function Scoreline({
   }
 
   return (
-    <span className="font-mono text-[10px] font-extrabold uppercase tracking-[0.3em] text-muted-foreground/50">
+    <span className="font-mono text-[10px] font-extrabold uppercase tracking-[0.32em] text-muted-foreground/40">
       vs
     </span>
   )
 }
 
-// ─── Right-edge status pill ──────────────────────────────────────────────────
+// ─── Status pill (right) ─────────────────────────────────────────────────────
 
 function StatusPill({
   isActive,
@@ -478,7 +448,7 @@ function StatusPill({
 }) {
   if (isActive) {
     return (
-      <Badge className="justify-self-end h-5 gap-1 rounded-sm bg-destructive text-destructive-foreground hover:bg-destructive px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em]">
+      <Badge className="h-5 rounded-sm bg-destructive px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-destructive-foreground hover:bg-destructive">
         ON AIR
       </Badge>
     )
@@ -487,7 +457,7 @@ function StatusPill({
     return (
       <Badge
         variant="outline"
-        className="justify-self-end h-5 gap-1 rounded-sm border-chart-2/40 bg-chart-2/10 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-chart-2"
+        className="h-5 rounded-sm border-chart-2/40 bg-chart-2/10 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-chart-2"
       >
         FINAL
       </Badge>
@@ -497,7 +467,7 @@ function StatusPill({
     return (
       <Badge
         variant="outline"
-        className="justify-self-end h-5 gap-1 rounded-sm border-primary/40 bg-primary/5 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-primary"
+        className="h-5 rounded-sm border-primary/40 bg-primary/[0.06] px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-primary"
       >
         TAP
       </Badge>
@@ -507,7 +477,7 @@ function StatusPill({
     return (
       <Badge
         variant="outline"
-        className="justify-self-end h-5 gap-1 rounded-sm border-primary/30 bg-primary/5 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-primary"
+        className="h-5 rounded-sm border-primary/30 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-primary"
       >
         YOU
       </Badge>
@@ -516,7 +486,7 @@ function StatusPill({
   return (
     <Badge
       variant="outline"
-      className="justify-self-end h-5 gap-1 rounded-sm border-border/40 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-muted-foreground/60"
+      className="h-5 rounded-sm border-border/40 px-1.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.22em] text-muted-foreground/50"
     >
       QUEUED
     </Badge>
@@ -528,7 +498,7 @@ function StatusPill({
 function PlayerPill({ player, color }: { player: SessionPlayer; color: string }) {
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-sm border border-border/40 bg-background/70 pl-0.5 pr-1.5 py-0.5"
+      className="inline-flex items-center gap-1 rounded-sm border border-border/40 bg-background/60 pl-0.5 pr-1.5 py-0.5"
       style={{ boxShadow: `inset 2px 0 0 0 ${color}` }}
     >
       {player.photoURL ? (
@@ -536,13 +506,13 @@ function PlayerPill({ player, color }: { player: SessionPlayer; color: string })
         <img
           src={player.photoURL}
           alt=""
-          className="size-4 rounded-full"
+          className="size-3.5 rounded-full"
           referrerPolicy="no-referrer"
         />
       ) : (
         <span
           aria-hidden
-          className="flex size-4 items-center justify-center rounded-full text-[10px] leading-none"
+          className="flex size-3.5 items-center justify-center rounded-full text-[9px] leading-none"
           style={{ background: `color-mix(in srgb, ${color} 20%, transparent)` }}
         >
           {player.emoji}
