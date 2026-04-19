@@ -2,8 +2,8 @@ import { renderHook, act } from '@testing-library/react'
 import { useRegistry } from '../hooks/useRegistry'
 import type { SessionPlayer } from '../types'
 
-const alice: SessionPlayer = { id: 'p1', name: 'Alice', emoji: '🏸', rating: 3 }
-const bob: SessionPlayer = { id: 'p2', name: 'Bob', emoji: '🔥', rating: 3 }
+const alice: SessionPlayer = { id: 'p1', name: 'Alice', emoji: '🏸' }
+const bob: SessionPlayer = { id: 'p2', name: 'Bob', emoji: '🔥' }
 
 describe('useRegistry', () => {
   beforeEach(() => localStorage.clear())

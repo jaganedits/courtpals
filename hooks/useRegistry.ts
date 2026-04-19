@@ -1,29 +1,15 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import type { PlayerRating, SessionPlayer } from '@/types'
+import type { SessionPlayer } from '@/types'
 
 const KEY = 'courtpals_registry'
-
-function normalizeRating(value: unknown): PlayerRating {
-  const n = typeof value === 'number' ? Math.round(value) : 3
-  if (n < 1) return 1
-  if (n > 5) return 5
-  return n as PlayerRating
-}
 
 function load(): SessionPlayer[] {
   if (typeof window === 'undefined') return []
   try {
     const raw = localStorage.getItem(KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as Array<Partial<SessionPlayer>>
-    return parsed.map(p => ({
-      id: String(p.id ?? ''),
-      name: String(p.name ?? ''),
-      emoji: String(p.emoji ?? '🏸'),
-      rating: normalizeRating(p.rating),
-    }))
+    return raw ? (JSON.parse(raw) as SessionPlayer[]) : []
   } catch {
     return []
   }

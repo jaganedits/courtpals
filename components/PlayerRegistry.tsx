@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Users, Star } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -21,8 +21,7 @@ import {
 } from '@/components/ui/empty'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { cn } from '@/lib/utils'
-import type { PlayerRating, SessionPlayer } from '@/types'
+import type { SessionPlayer } from '@/types'
 
 const EMOJIS = [
   '🏸','🔥','⚡','🌟','💪','🦁','🐯','🦊','🐺','🦅',
@@ -40,7 +39,6 @@ interface Props {
 export default function PlayerRegistry({ players, onAdd, onRemove, onUpdate }: Props) {
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState('🏸')
-  const [rating, setRating] = useState<PlayerRating>(3)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
 
@@ -51,11 +49,9 @@ export default function PlayerRegistry({ players, onAdd, onRemove, onUpdate }: P
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       name: trimmed,
       emoji,
-      rating,
     })
     setName('')
     setEmoji('🏸')
-    setRating(3)
   }
 
   function startEdit(p: SessionPlayer) {
@@ -144,13 +140,6 @@ export default function PlayerRegistry({ players, onAdd, onRemove, onUpdate }: P
               ))}
             </ToggleGroup>
           </div>
-
-          <div className="flex flex-col gap-2">
-            <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Skill level
-            </p>
-            <StarRating value={rating} onChange={setRating} size="lg" />
-          </div>
         </CardContent>
       </Card>
 
@@ -201,16 +190,9 @@ export default function PlayerRegistry({ players, onAdd, onRemove, onUpdate }: P
                       >
                         {p.name}
                       </p>
-                      <div className="flex items-center gap-2">
-                        <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                          #{(i + 1).toString().padStart(2, '0')}
-                        </p>
-                        <StarRating
-                          value={p.rating}
-                          onChange={r => onUpdate({ ...p, rating: r })}
-                          size="sm"
-                        />
-                      </div>
+                      <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                        #{(i + 1).toString().padStart(2, '0')}
+                      </p>
                     </div>
                   )}
 
@@ -241,43 +223,6 @@ export default function PlayerRegistry({ players, onAdd, onRemove, onUpdate }: P
           })}
         </section>
       )}
-    </div>
-  )
-}
-
-function StarRating({
-  value,
-  onChange,
-  size = 'md',
-}: {
-  value: PlayerRating
-  onChange: (r: PlayerRating) => void
-  size?: 'sm' | 'md' | 'lg'
-}) {
-  const star = size === 'sm' ? 'size-3' : size === 'lg' ? 'size-6' : 'size-4'
-  return (
-    <div className="flex items-center gap-0.5" role="radiogroup" aria-label="Skill rating">
-      {[1, 2, 3, 4, 5].map(n => {
-        const active = n <= value
-        return (
-          <button
-            key={n}
-            type="button"
-            role="radio"
-            aria-checked={n === value}
-            aria-label={`${n} of 5`}
-            onClick={() => onChange(n as PlayerRating)}
-            className="p-0.5 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
-          >
-            <Star
-              className={cn(
-                star,
-                active ? 'fill-primary text-primary' : 'text-muted-foreground/40',
-              )}
-            />
-          </button>
-        )
-      })}
     </div>
   )
 }

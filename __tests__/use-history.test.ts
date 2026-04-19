@@ -8,8 +8,8 @@ const mockSession: SavedSession = {
   winTarget: 21,
   teamSize: 2,
   teams: [
-    { id: 't1', name: 'Team 1', players: [{ id: 'p1', name: 'Alice', emoji: '🏸', rating: 3 }] },
-    { id: 't2', name: 'Team 2', players: [{ id: 'p2', name: 'Bob', emoji: '🔥', rating: 3 }] },
+    { id: 't1', name: 'Team 1', players: [{ id: 'p1', name: 'Alice', emoji: '🏸' }] },
+    { id: 't2', name: 'Team 2', players: [{ id: 'p2', name: 'Bob', emoji: '🔥' }] },
   ],
   fixtures: [],
 }
