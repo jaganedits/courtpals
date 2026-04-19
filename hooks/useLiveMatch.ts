@@ -28,13 +28,17 @@ export function useLiveMatch(courtId: string | null) {
           setLiveMatch(null)
           return
         }
-        const data = snap.data() as Omit<MatchState, 'events'> & { events?: MatchState['events'] }
+        const data = snap.data() as Partial<MatchState> & {
+          teamAPlayers?: MatchState['teamPlayers'][0]
+          teamBPlayers?: MatchState['teamPlayers'][1]
+        }
+        // teamPlayers is written as two flat top-level arrays on the wire
+        // (Firestore forbids nested arrays); rebuild the tuple here.
         setLiveMatch({
-          ...data,
-          // Events list isn't persisted to keep writes tiny; spectators
-          // don't need per-point history.
+          ...(data as MatchState),
+          teamPlayers: [data.teamAPlayers ?? [], data.teamBPlayers ?? []],
           events: data.events ?? [],
-        } as MatchState)
+        })
       },
       () => setLiveMatch(null),
     )

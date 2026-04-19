@@ -85,9 +85,14 @@ export default function Page() {
     if (!db) return
     const ref = doc(db, 'courts', courtId, 'liveMatch', 'current')
     if (match.phase !== 'idle') {
-      const { events: _events, ...rest } = match
+      // Firestore rejects nested arrays, so split the teamPlayers tuple into
+      // two top-level arrays before writing. useLiveMatch rebuilds the tuple
+      // on read.
+      const { events: _events, teamPlayers, ...rest } = match
       setDoc(ref, {
         ...rest,
+        teamAPlayers: teamPlayers?.[0] ?? [],
+        teamBPlayers: teamPlayers?.[1] ?? [],
         scorerUid: auth.user.uid,
         updatedAt: serverTimestamp(),
       }).catch(err => console.error('[courtpals] liveMatch write failed:', err?.message ?? err))
