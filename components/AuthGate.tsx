@@ -1,12 +1,12 @@
 'use client'
 
-import { ReactNode, useMemo } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { LogIn, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { isFirebaseConfigured } from '@/lib/firebase'
 import { useAuth } from '@/hooks/useAuth'
 import { useCourt } from '@/hooks/useCourt'
-import { readSessionCache } from '@/lib/local-cache'
+import { readSessionCache, type SessionCache } from '@/lib/local-cache'
 import CourtBootstrapDialog from '@/components/CourtBootstrapDialog'
 
 interface Props {
@@ -26,9 +26,19 @@ export default function AuthGate({ children }: Props) {
 function FirebaseGate({ children }: { children: ReactNode }) {
   const auth = useAuth()
   const court = useCourt(auth.user)
-  // Only read the cache once on mount — it's the optimistic snapshot that
-  // lets us skip the loading spinner if the last session had a court.
-  const initialCache = useMemo(() => readSessionCache(), [])
+  // Deferred cache read: server and first-client render both see `null`,
+  // avoiding the hydration mismatch that would occur if we read sessionStorage
+  // synchronously during render.
+  const [initialCache, setInitialCache] = useState<SessionCache | null>(null)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setInitialCache(readSessionCache())
+    setMounted(true)
+  }, [])
+
+  // Before the first client effect runs, match the server output (loading
+  // spinner) so hydration lines up.
+  if (!mounted) return <LoadingShell />
 
   // Optimistic path: we have a cached signed-in user with a court from a
   // previous session. Render the app immediately and let Firebase revalidate
