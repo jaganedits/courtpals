@@ -8,12 +8,14 @@ import PlayerRegistry from '@/components/PlayerRegistry'
 import ScoreBoard from '@/components/ScoreBoard'
 import WinCelebration from '@/components/WinCelebration'
 import HistoryCalendar from '@/components/HistoryCalendar'
+import UserMenu from '@/components/UserMenu'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useRegistry } from '@/hooks/useRegistry'
 import { useSession } from '@/hooks/useSession'
 import { useMatch } from '@/hooks/useMatch'
 import { useHistory } from '@/hooks/useHistory'
+import { useCurrentPlayer } from '@/hooks/useCurrentPlayer'
 import type { SavedSession } from '@/types'
 
 const DESKTOP_TABS: { id: Tab; label: string; Icon: typeof Trophy }[] = [
@@ -27,6 +29,7 @@ export default function Page() {
   const [tab, setTab] = useState<Tab>('league')
   const [todayLabel, setTodayLabel] = useState('')
   const { players: registry, addPlayer, removePlayer, updatePlayer } = useRegistry()
+  const { currentPlayerId, setCurrentPlayer, clearCurrentPlayer } = useCurrentPlayer()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const { state: session, dispatch: sessionDispatch } = useSession()
   const { state: match, dispatch: matchDispatch } = useMatch()
@@ -167,12 +170,23 @@ export default function Page() {
             </ul>
           </nav>
 
-          <span
-            suppressHydrationWarning
-            className="font-score text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-ink-dim)] lg:text-xs"
-          >
-            {todayLabel}
-          </span>
+          <div className="flex items-center gap-3">
+            <span
+              suppressHydrationWarning
+              className="hidden font-score text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-ink-dim)] sm:inline lg:text-xs"
+            >
+              {todayLabel}
+            </span>
+            <UserMenu
+              players={registry}
+              currentPlayerId={currentPlayerId}
+              history={history}
+              onSignIn={setCurrentPlayer}
+              onSignOut={clearCurrentPlayer}
+              onUpdatePlayer={updatePlayer}
+              onAddPlayer={addPlayer}
+            />
+          </div>
         </div>
       </header>
 
