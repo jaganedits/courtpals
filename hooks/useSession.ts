@@ -375,16 +375,24 @@ export function sessionReducer(state: DaySession, action: SessionAction): DaySes
       return { ...state, phase: 'active' }
 
     case 'HYDRATE_SESSION': {
-      const p = action.payload
+      // Merge with initialSession so partial payloads (legacy docs or shape
+      // drift from Firestore) don't blow up when a field is missing.
+      const p = { ...initialSession, ...action.payload }
+      const rawFixtures = Array.isArray(p.fixtures) ? p.fixtures : []
       // Heal any legacy snapshot where multiple fixtures were left in 'active'
       // state. Keep only the one pointed at by activeFixtureId; reset the rest.
-      const fixtures = p.fixtures.map(f => {
+      const fixtures = rawFixtures.map(f => {
         if (f.status === 'active' && f.id !== p.activeFixtureId) {
           return { ...f, status: 'pending' as const, scoreA: 0, scoreB: 0, winnerId: null }
         }
         return f
       })
-      return { ...p, fixtures }
+      return {
+        ...p,
+        fixtures,
+        players: Array.isArray(p.players) ? p.players : [],
+        teams: Array.isArray(p.teams) ? p.teams : [],
+      }
     }
 
     default:
