@@ -48,6 +48,10 @@ function generateInviteCode(): string {
   return code
 }
 
+function generatePlayerId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
 export function useCourt(user: User | null) {
   const [state, setState] = useState<CourtState>({
     loading: true,
@@ -150,11 +154,21 @@ export function useCourt(user: User | null) {
         createdAt: serverTimestamp(),
       })
       await setDoc(inviteRef, { courtId })
+
+      // Auto-create a player record for the admin so they're on the roster
+      // the moment the court exists.
+      const playerId = generatePlayerId()
+      await setDoc(doc(db, 'courts', courtId, 'players', playerId), {
+        name: user.displayName ?? name.trim(),
+        emoji: '🏸',
+        uid: user.uid,
+      })
+
       await setDoc(
         userRef,
         {
           courtId,
-          playerId: null,
+          playerId,
           displayName: user.displayName ?? name.trim(),
           photoURL: user.photoURL ?? null,
         },
@@ -181,11 +195,31 @@ export function useCourt(user: User | null) {
       if (!court.members.includes(user.uid)) {
         await updateDoc(courtRef, { members: arrayUnion(user.uid) })
       }
+
+      // Auto-create a player record for the new member the first time they
+      // join so the admin doesn't have to. If they've been here before with
+      // an existing playerId pointer, reuse it.
+      const userRef = doc(db, 'users', user.uid)
+      const existingUser = await getDoc(userRef)
+      const existingPlayerId = existingUser.exists()
+        ? ((existingUser.data() as UserProfile).playerId ?? null)
+        : null
+
+      let playerId = existingPlayerId
+      if (!playerId) {
+        playerId = generatePlayerId()
+        await setDoc(doc(db, 'courts', courtId, 'players', playerId), {
+          name: user.displayName ?? 'Player',
+          emoji: '🏸',
+          uid: user.uid,
+        })
+      }
+
       await setDoc(
-        doc(db, 'users', user.uid),
+        userRef,
         {
           courtId,
-          playerId: null,
+          playerId,
           displayName: user.displayName ?? 'Player',
           photoURL: user.photoURL ?? null,
         },
