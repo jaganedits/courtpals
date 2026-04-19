@@ -18,7 +18,7 @@ import {
 import { RotateCcw, Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { rankStandings } from '@/hooks/useSession'
-import type { Fixture, Round, SessionTeam } from '@/types'
+import type { Fixture, Round, SessionPlayer, SessionTeam } from '@/types'
 
 const TEAM_COLORS = [
   'var(--color-team-a)',
@@ -156,14 +156,18 @@ export default function FixtureList({
                   onClick={() => canStart && onStartFixture(f.id)}
                   role={canStart ? 'button' : undefined}
                   aria-disabled={!canStart}
-                  style={{ animationDelay: `${(gi * 4 + i) * 40}ms` }}
+                  style={{
+                    animationDelay: `${(gi * 4 + i) * 40}ms`,
+                    // Two-tone gradient from each team's accent colour.
+                    backgroundImage: `linear-gradient(105deg, color-mix(in srgb, ${colorA} 22%, transparent) 0%, color-mix(in srgb, ${colorA} 6%, transparent) 38%, transparent 50%, color-mix(in srgb, ${colorB} 6%, transparent) 62%, color-mix(in srgb, ${colorB} 22%, transparent) 100%)`,
+                  }}
                   className={cn(
                     'animate-rise gap-0 overflow-hidden border-2 py-0 transition-all',
                     isActive && 'border-destructive ring-2 ring-destructive/50',
                     canStart && 'cursor-pointer hover:border-primary/40 active:scale-[0.99]',
                     !canStart && !isActive && 'opacity-80',
                     group.round !== 'rr' && !isActive && 'border-primary/40',
-                    mine && !isActive && 'border-primary/70 bg-primary/5 ring-1 ring-primary/30',
+                    mine && !isActive && 'border-primary/70 ring-1 ring-primary/30',
                   )}
                 >
                   <CardContent className="flex items-stretch p-0">
@@ -195,6 +199,7 @@ export default function FixtureList({
                         winner={isWinnerA}
                         dim={isDone && !isWinnerA}
                         rank={anyRRDone ? rankMap.get(f.teamAId) ?? null : null}
+                        players={tA.players}
                       />
 
                       <div className="flex shrink-0 flex-col items-center gap-1 px-1">
@@ -269,6 +274,7 @@ export default function FixtureList({
                         winner={isWinnerB}
                         dim={isDone && !isWinnerB}
                         rank={anyRRDone ? rankMap.get(f.teamBId) ?? null : null}
+                        players={tB.players}
                       />
                     </div>
                   </CardContent>
@@ -290,6 +296,7 @@ function TeamSide({
   winner,
   dim,
   rank,
+  players,
 }: {
   team: SessionTeam
   color: string
@@ -298,6 +305,7 @@ function TeamSide({
   winner: boolean
   dim: boolean
   rank: number | null
+  players: SessionPlayer[]
 }) {
   return (
     <div
@@ -327,9 +335,16 @@ function TeamSide({
           <span className="font-display text-sm font-extrabold truncate">{team.name}</span>
           {winner && <Trophy className="size-3.5 text-primary" />}
         </div>
-        <p className={cn('truncate text-[10px] text-muted-foreground', align === 'right' && 'text-right')}>
-          {team.players.map(p => p.name).join(' · ')}
-        </p>
+        <div
+          className={cn(
+            'mt-1 flex flex-wrap items-center gap-1',
+            align === 'right' && 'justify-end',
+          )}
+        >
+          {players.map(p => (
+            <PlayerAvatarChip key={p.id} player={p} color={color} />
+          ))}
+        </div>
       </div>
       {score !== null && (
         <span
@@ -342,5 +357,35 @@ function TeamSide({
         </span>
       )}
     </div>
+  )
+}
+
+function PlayerAvatarChip({ player, color }: { player: SessionPlayer; color: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full border bg-background/70 pl-0.5 pr-1.5 py-0.5"
+      style={{ borderColor: `color-mix(in srgb, ${color} 50%, var(--border))` }}
+    >
+      {player.photoURL ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={player.photoURL}
+          alt=""
+          className="size-4 rounded-full"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <span
+          aria-hidden
+          className="flex size-4 items-center justify-center rounded-full text-[10px] leading-none"
+          style={{ background: `color-mix(in srgb, ${color} 30%, transparent)` }}
+        >
+          {player.emoji}
+        </span>
+      )}
+      <span className="font-display max-w-18 truncate text-[10px] font-bold">
+        {player.name}
+      </span>
+    </span>
   )
 }
