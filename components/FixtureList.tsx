@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { rankStandings } from '@/hooks/useSession'
 import type { Fixture, Round, SessionTeam } from '@/types'
 
 const TEAM_COLORS = [
@@ -56,6 +57,11 @@ export default function FixtureList({ fixtures, teams, onStartFixture }: Props) 
   const done = fixtures.filter(f => f.status === 'done').length
   const total = fixtures.length
   const progressPct = total === 0 ? 0 : (done / total) * 100
+
+  const standings = rankStandings(teams, fixtures)
+  const anyRRDone = standings.some(r => r.played > 0)
+  const rankMap = new Map<string, number>()
+  standings.forEach((row, i) => rankMap.set(row.team.id, i + 1))
 
   const grouped = ROUND_ORDER
     .map(round => ({ round, list: fixtures.filter(f => f.round === round) }))
@@ -160,6 +166,7 @@ export default function FixtureList({ fixtures, teams, onStartFixture }: Props) 
                         score={isDone ? f.scoreA : null}
                         winner={isWinnerA}
                         dim={isDone && !isWinnerA}
+                        rank={anyRRDone ? rankMap.get(f.teamAId) ?? null : null}
                       />
 
                       <div className="flex shrink-0 flex-col items-center gap-1 px-1">
@@ -188,6 +195,7 @@ export default function FixtureList({ fixtures, teams, onStartFixture }: Props) 
                         score={isDone ? f.scoreB : null}
                         winner={isWinnerB}
                         dim={isDone && !isWinnerB}
+                        rank={anyRRDone ? rankMap.get(f.teamBId) ?? null : null}
                       />
                     </div>
                   </CardContent>
@@ -208,6 +216,7 @@ function TeamSide({
   score,
   winner,
   dim,
+  rank,
 }: {
   team: SessionTeam
   color: string
@@ -215,6 +224,7 @@ function TeamSide({
   score: number | null
   winner: boolean
   dim: boolean
+  rank: number | null
 }) {
   return (
     <div
@@ -231,6 +241,16 @@ function TeamSide({
       />
       <div className="min-w-0 flex-1">
         <div className={cn('flex items-baseline gap-1.5', align === 'right' && 'flex-row-reverse')}>
+          {rank !== null && (
+            <span
+              className={cn(
+                'font-score shrink-0 text-[10px] font-extrabold tabular',
+                rank === 1 ? 'text-primary' : 'text-muted-foreground',
+              )}
+            >
+              #{rank}
+            </span>
+          )}
           <span className="font-display text-sm font-extrabold truncate">{team.name}</span>
           {winner && <Trophy className="size-3.5 text-primary" />}
         </div>
