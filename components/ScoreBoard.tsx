@@ -140,7 +140,7 @@ export default function ScoreBoard({ state, dispatch, onAbandon }: Props) {
                     {state.teamNames[ti]}
                   </span>
                   {state.teamPlayers?.[ti]?.length ? (
-                    <div className="flex flex-wrap justify-center gap-1.5">
+                    <div className="hidden flex-wrap justify-center gap-1.5 lg:flex">
                       {state.teamPlayers[ti].map(p => (
                         <PlayerChip key={p.id} player={p} accent={side.accent} />
                       ))}
