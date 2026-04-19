@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth'
 import { firebaseAuth, googleProvider, isFirebaseConfigured } from '@/lib/firebase'
+import { cacheFirebaseUser, clearCourtPalsStorage } from '@/lib/local-cache'
 
 export interface AuthState {
   /** The Firebase user object, or null if signed out. */
@@ -30,6 +31,7 @@ export function useAuth() {
       return
     }
     const unsub = onAuthStateChanged(auth, u => {
+      cacheFirebaseUser(u)
       setState(s => ({ ...s, user: u, loading: false }))
     })
     return unsub
@@ -56,6 +58,11 @@ export function useAuth() {
       await signOut(auth)
     } catch (e) {
       setState(s => ({ ...s, error: (e as Error).message }))
+    } finally {
+      // Drop every courtpals_* entry from localStorage and sessionStorage so
+      // the device doesn't leak state to the next signee (or to the same
+      // user if they re-auth into a different court).
+      clearCourtPalsStorage()
     }
   }, [])
 

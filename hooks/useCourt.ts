@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore'
 import type { User } from 'firebase/auth'
 import { firestore } from '@/lib/firebase'
+import { readSessionCache, writeSessionCache } from '@/lib/local-cache'
 
 export interface Court {
   id: string
@@ -96,16 +97,25 @@ export function useCourt(user: User | null) {
           return
         }
         const data = snap.data() as UserProfile
-        setState(s => ({
-          ...s,
-          profile: {
-            courtId: data.courtId ?? null,
-            playerId: data.playerId ?? null,
-            displayName: data.displayName ?? user.displayName ?? 'Player',
-            photoURL: data.photoURL ?? user.photoURL,
-          },
-          loading: false,
-        }))
+        const profile: UserProfile = {
+          courtId: data.courtId ?? null,
+          playerId: data.playerId ?? null,
+          displayName: data.displayName ?? user.displayName ?? 'Player',
+          photoURL: data.photoURL ?? user.photoURL,
+        }
+        setState(s => ({ ...s, profile, loading: false }))
+        // Keep the session cache in sync for fast reloads.
+        const cache = readSessionCache()
+        writeSessionCache({
+          uid: user.uid,
+          email: user.email,
+          displayName: profile.displayName,
+          photoURL: profile.photoURL,
+          courtId: profile.courtId,
+          courtName: cache?.courtName ?? null,
+          playerId: profile.playerId,
+          isAdmin: cache?.isAdmin ?? false,
+        })
       },
       err => setState(s => ({ ...s, loading: false, error: err.message })),
     )
@@ -129,11 +139,20 @@ export function useCourt(user: User | null) {
           return
         }
         const data = snap.data() as Omit<Court, 'id'>
+        const isAdmin = data.createdBy === user.uid
         setState(s => ({
           ...s,
           court: { id: snap.id, ...data },
-          isAdmin: data.createdBy === user.uid,
+          isAdmin,
         }))
+        const cache = readSessionCache()
+        if (cache) {
+          writeSessionCache({
+            ...cache,
+            courtName: data.name,
+            isAdmin,
+          })
+        }
       },
       err => setState(s => ({ ...s, error: err.message })),
     )
