@@ -17,7 +17,7 @@ const TEAM_COLORS = [
   'var(--color-team-f)',
 ]
 
-const ROUND_ORDER: Round[] = ['rr', 'semi', 'final', '3rd']
+const ROUND_ORDER: Round[] = ['rr', 'semi', '3rd', 'final']
 
 const ROUND_LABELS: Record<Round, { eyebrow: string; title: string }> = {
   rr: { eyebrow: 'group stage', title: 'Round robin' },

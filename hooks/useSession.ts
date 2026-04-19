@@ -122,9 +122,10 @@ export function generatePlayoffSeed(teams: SessionTeam[], rankedIds: string[]): 
   const n = teams.length
   if (n < 4) return []
   if (n <= 5) {
+    // 3rd-place is emitted first so it's played before the Final.
     return [
-      makeFixture(rankedIds[0], rankedIds[1], 'final'),
       makeFixture(rankedIds[2], rankedIds[3], '3rd'),
+      makeFixture(rankedIds[0], rankedIds[1], 'final'),
     ]
   }
   return [
@@ -137,9 +138,10 @@ export function generateFinals(semis: Fixture[]): Fixture[] {
   if (semis.length !== 2 || semis.some(s => s.status !== 'done' || !s.winnerId)) return []
   const [s1, s2] = semis
   const loser = (f: Fixture) => (f.winnerId === f.teamAId ? f.teamBId : f.teamAId)
+  // 3rd-place first, then Final — bronze match is the warm-up for the decider.
   return [
-    makeFixture(s1.winnerId!, s2.winnerId!, 'final'),
     makeFixture(loser(s1), loser(s2), '3rd'),
+    makeFixture(s1.winnerId!, s2.winnerId!, 'final'),
   ]
 }
 
