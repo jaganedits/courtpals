@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
+import { rankStandings } from '@/hooks/useSession'
 import type { SavedSession, SessionTeam, Fixture } from '@/types'
 
 interface Props {
@@ -49,22 +50,14 @@ function toDateKey(ts: number): string {
 
 function computeWinner(teams: SessionTeam[], fixtures: Fixture[]): SessionTeam | null {
   if (teams.length === 0) return null
-  const pts = new Map<string, number>()
-  teams.forEach(t => pts.set(t.id, 0))
-  fixtures
-    .filter(f => f.status === 'done' && f.winnerId)
-    .forEach(f => {
-      pts.set(f.winnerId!, (pts.get(f.winnerId!) ?? 0) + 2)
-    })
-  let best: SessionTeam | null = null
-  let bestPts = -1
-  for (const [id, p] of pts) {
-    if (p > bestPts) {
-      bestPts = p
-      best = teams.find(t => t.id === id) ?? null
-    }
-  }
-  return best
+  // Playoffs happened: champion is whoever won the Final.
+  const final = fixtures.find(
+    f => f.round === 'final' && f.status === 'done' && f.winnerId,
+  )
+  if (final) return teams.find(t => t.id === final.winnerId) ?? null
+  // RR-only session: champion is the top of the standings table.
+  const ranked = rankStandings(teams, fixtures)
+  return ranked[0]?.team ?? null
 }
 
 export default function HistoryCalendar({ history, onClearHistory }: Props) {
