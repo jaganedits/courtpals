@@ -184,7 +184,6 @@ export default function Page() {
               onSignIn={setCurrentPlayer}
               onSignOut={clearCurrentPlayer}
               onUpdatePlayer={updatePlayer}
-              onAddPlayer={addPlayer}
             />
           </div>
         </div>

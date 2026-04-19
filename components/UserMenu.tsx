@@ -33,7 +33,6 @@ interface Props {
   onSignIn: (playerId: string) => void
   onSignOut: () => void
   onUpdatePlayer: (player: SessionPlayer) => void
-  onAddPlayer: (player: SessionPlayer) => void
 }
 
 export default function UserMenu({
@@ -43,7 +42,6 @@ export default function UserMenu({
   onSignIn,
   onSignOut,
   onUpdatePlayer,
-  onAddPlayer,
 }: Props) {
   const [open, setOpen] = useState(false)
 
@@ -62,7 +60,6 @@ export default function UserMenu({
           onSignIn(id)
           setOpen(false)
         }}
-        onAddPlayer={onAddPlayer}
       />
     )
   }
@@ -87,25 +84,12 @@ function SignInDialog({
   onOpenChange,
   players,
   onSignIn,
-  onAddPlayer,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   players: SessionPlayer[]
   onSignIn: (id: string) => void
-  onAddPlayer: (player: SessionPlayer) => void
 }) {
-  const [newName, setNewName] = useState('')
-
-  function handleCreate() {
-    const trimmed = newName.trim()
-    if (!trimmed) return
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-    onAddPlayer({ id, name: trimmed, emoji: '🏸' })
-    setNewName('')
-    onSignIn(id)
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
@@ -142,35 +126,9 @@ function SignInDialog({
           </div>
         ) : (
           <p className="rounded-xl border-2 border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-            No players yet. Add yourself below.
+            No players on the roster yet. Ask your admin to add you.
           </p>
         )}
-
-        <Separator />
-
-        <div className="flex flex-col gap-2">
-          <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-            or add yourself
-          </p>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Your name"
-              value={newName}
-              maxLength={20}
-              onChange={e => setNewName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleCreate()}
-              className="font-display font-semibold"
-            />
-            <Button
-              type="button"
-              onClick={handleCreate}
-              disabled={!newName.trim()}
-              className="font-display font-extrabold"
-            >
-              Join
-            </Button>
-          </div>
-        </div>
       </DialogContent>
     </Dialog>
   )
