@@ -17,6 +17,8 @@ import { useSession } from '@/hooks/useSession'
 import { useMatch } from '@/hooks/useMatch'
 import { useHistory } from '@/hooks/useHistory'
 import { useCurrentPlayer } from '@/hooks/useCurrentPlayer'
+import { useAuth } from '@/hooks/useAuth'
+import { useCourt } from '@/hooks/useCourt'
 import type { SavedSession } from '@/types'
 
 const DESKTOP_TABS: { id: Tab; label: string; Icon: typeof Trophy }[] = [
@@ -29,12 +31,18 @@ const DESKTOP_TABS: { id: Tab; label: string; Icon: typeof Trophy }[] = [
 export default function Page() {
   const [tab, setTab] = useState<Tab>('league')
   const [todayLabel, setTodayLabel] = useState('')
-  const { players: registry, addPlayer, removePlayer, updatePlayer } = useRegistry()
-  const { currentPlayerId, setCurrentPlayer, clearCurrentPlayer } = useCurrentPlayer()
+  const auth = useAuth()
+  const court = useCourt(auth.user)
+  const courtId = court.court?.id ?? null
+  const { players: registry, addPlayer, removePlayer, updatePlayer } = useRegistry(courtId)
+  const { currentPlayerId, setCurrentPlayer, clearCurrentPlayer } = useCurrentPlayer({
+    user: auth.user,
+    remotePlayerId: court.profile?.playerId ?? null,
+  })
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const { state: session, dispatch: sessionDispatch } = useSession()
   const { state: match, dispatch: matchDispatch } = useMatch()
-  const { history, saveSession, clearHistory } = useHistory()
+  const { history, saveSession, clearHistory } = useHistory(courtId)
 
   const activeFixture = session.fixtures.find(f => f.id === session.activeFixtureId) ?? null
   const scoreTabEnabled = match.phase !== 'idle'
