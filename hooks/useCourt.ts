@@ -220,15 +220,26 @@ export function useCourt(user: User | null) {
       }
 
       // Auto-create a player record for the new member the first time they
-      // join so the admin doesn't have to. If they've been here before with
-      // an existing playerId pointer, reuse it.
+      // join so the admin doesn't have to. A playerId only gets reused when
+      // it belongs to THIS court (i.e. the user is re-joining after a leave);
+      // a stale pointer to a different court is ignored so every court has
+      // its own independent roster entry for the user.
       const userRef = doc(db, 'users', user.uid)
       const existingUser = await getDoc(userRef)
-      const existingPlayerId = existingUser.exists()
-        ? ((existingUser.data() as UserProfile).playerId ?? null)
+      const existingUserData = existingUser.exists()
+        ? (existingUser.data() as UserProfile)
         : null
+      const reusablePlayerId =
+        existingUserData?.courtId === courtId && existingUserData?.playerId
+          ? existingUserData.playerId
+          : null
 
-      let playerId = existingPlayerId
+      let playerId = reusablePlayerId
+      if (playerId) {
+        // Confirm the roster entry still exists — admin may have deleted it.
+        const existingPlayer = await getDoc(doc(db, 'courts', courtId, 'players', playerId))
+        if (!existingPlayer.exists()) playerId = null
+      }
       if (!playerId) {
         playerId = generatePlayerId()
         await setDoc(doc(db, 'courts', courtId, 'players', playerId), {
