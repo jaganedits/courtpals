@@ -3,6 +3,14 @@
 import { Dices, Users, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
   Empty,
@@ -159,44 +167,125 @@ export default function DaySetup({
             tap to check in
           </p>
           <Separator />
-          {allPlayers.map((p, i) => {
-            const isIn = selectedIds.has(p.id)
-            return (
-              <Card
-                key={p.id}
-                style={{ animationDelay: `${i * 30}ms` }}
-                onClick={() => onToggle(p.id)}
-                className={cn(
-                  'animate-rise cursor-pointer gap-0 border-2 py-0 transition-all active:scale-[0.98]',
-                  isIn ? 'border-primary bg-primary/10' : 'hover:border-primary/30',
-                )}
-                aria-pressed={isIn}
-                role="button"
-              >
-                <CardContent className="flex items-center gap-3 p-3">
-                  <span
-                    className={cn(
-                      'flex-1 truncate font-display text-base font-extrabold',
-                      isIn ? 'text-foreground' : 'text-muted-foreground',
-                    )}
-                  >
-                    {p.name}
-                  </span>
-                  <div
-                    aria-hidden
-                    className={cn(
-                      'flex size-7 items-center justify-center rounded-full border-2 transition-all',
-                      isIn
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border bg-transparent text-transparent',
-                    )}
-                  >
-                    <Check className="size-4" />
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
+
+          {/* Mobile: card list */}
+          <div className="flex flex-col gap-2 lg:hidden">
+            {allPlayers.map((p, i) => {
+              const isIn = selectedIds.has(p.id)
+              return (
+                <Card
+                  key={p.id}
+                  style={{ animationDelay: `${i * 30}ms` }}
+                  onClick={() => onToggle(p.id)}
+                  className={cn(
+                    'animate-rise cursor-pointer gap-0 border-2 py-0 transition-all active:scale-[0.98]',
+                    isIn ? 'border-primary bg-primary/10' : 'hover:border-primary/30',
+                  )}
+                  aria-pressed={isIn}
+                  role="button"
+                >
+                  <CardContent className="flex items-center gap-3 p-3">
+                    <span
+                      className={cn(
+                        'flex-1 truncate font-display text-base font-extrabold',
+                        isIn ? 'text-foreground' : 'text-muted-foreground',
+                      )}
+                    >
+                      {p.name}
+                    </span>
+                    <div
+                      aria-hidden
+                      className={cn(
+                        'flex size-7 items-center justify-center rounded-full border-2 transition-all',
+                        isIn
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border bg-transparent text-transparent',
+                      )}
+                    >
+                      <Check className="size-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+
+          {/* Desktop: table */}
+          <Card className="hidden overflow-hidden py-0 lg:block">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b-2 border-border">
+                    <TableHead className="w-12 text-center font-display text-[9px] font-bold uppercase tracking-[0.18em]">
+                      in
+                    </TableHead>
+                    <TableHead className="w-14 text-center font-display text-[9px] font-bold uppercase tracking-[0.18em]">
+                      icon
+                    </TableHead>
+                    <TableHead className="font-display text-[9px] font-bold uppercase tracking-[0.18em]">
+                      name
+                    </TableHead>
+                    <TableHead className="w-24 text-right font-display text-[9px] font-bold uppercase tracking-[0.18em]">
+                      status
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {allPlayers.map(p => {
+                    const isIn = selectedIds.has(p.id)
+                    return (
+                      <TableRow
+                        key={p.id}
+                        onClick={() => onToggle(p.id)}
+                        aria-pressed={isIn}
+                        role="button"
+                        className={cn(
+                          'cursor-pointer transition-colors',
+                          isIn ? 'bg-primary/10 hover:bg-primary/15' : 'hover:bg-muted/40',
+                        )}
+                      >
+                        <TableCell className="text-center">
+                          <div
+                            aria-hidden
+                            className={cn(
+                              'mx-auto flex size-6 items-center justify-center rounded-full border-2 transition-all',
+                              isIn
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-border bg-transparent text-transparent',
+                            )}
+                          >
+                            <Check className="size-3.5" />
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center text-xl leading-none">
+                          {p.emoji}
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            'font-display text-sm font-extrabold',
+                            !isIn && 'text-muted-foreground',
+                          )}
+                        >
+                          {p.name}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge
+                            variant={isIn ? 'default' : 'outline'}
+                            className={cn(
+                              'font-display text-[10px] font-bold uppercase tracking-[0.14em]',
+                              !isIn && 'text-muted-foreground',
+                            )}
+                          >
+                            {isIn ? 'checked in' : 'out'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </section>
       )}
 
