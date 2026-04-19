@@ -108,12 +108,9 @@ export default function LeagueHub({
         { id: 'standings', label: 'Table' },
       ]
 
+  const playedCount = session.fixtures.filter(f => f.status !== 'pending').length
   const canReset =
-    session.phase === 'done' ||
-    session.phase === 'scheduled' ||
-    ((session.phase === 'active' || session.phase === 'playoffs') &&
-      session.fixtures.every(f => f.status === 'pending')) ||
-    (session.phase === 'setup' && session.teams.length > 0)
+    session.phase !== 'setup' || session.teams.length > 0
 
   const showSplit = !isSetupPhase && !isScheduled // only active / playoffs / done use the split view
   const saveButton =
@@ -133,23 +130,46 @@ export default function LeagueHub({
       </Button>
     ) : null
 
+  const hasProgress = playedCount > 0
   const resetDialog = canReset ? (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-          Reset
+        <Button
+          variant={hasProgress ? 'outline' : 'ghost'}
+          size="sm"
+          className={cn(
+            'text-destructive hover:text-destructive',
+            hasProgress && 'border-destructive/40 hover:bg-destructive/10',
+          )}
+        >
+          {hasProgress ? 'Delete tournament' : 'Reset'}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="font-display">Reset this session?</AlertDialogTitle>
+          <AlertDialogTitle className="font-display">
+            {hasProgress ? 'Delete this tournament?' : 'Reset this session?'}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            All teams and fixtures will be cleared. The player roster is unaffected.
+            {hasProgress ? (
+              <>
+                <strong>{playedCount}</strong> of <strong>{session.fixtures.length}</strong> matches
+                have been played. All scores, teams, and fixtures will be permanently discarded.
+                The player roster is unaffected.
+              </>
+            ) : (
+              'All teams and fixtures will be cleared. The player roster is unaffected.'
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleReset}>Reset session</AlertDialogAction>
+          <AlertDialogAction
+            onClick={handleReset}
+            className={cn(hasProgress && 'bg-destructive text-destructive-foreground hover:bg-destructive/90')}
+          >
+            {hasProgress ? 'Delete tournament' : 'Reset session'}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
