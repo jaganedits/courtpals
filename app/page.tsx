@@ -43,7 +43,11 @@ export default function Page() {
     remotePlayerId: court.profile?.playerId ?? null,
   })
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const { state: session, dispatch: sessionDispatch } = useSession()
+  const { state: session, dispatch: sessionDispatch } = useSession({
+    courtId,
+    uid: auth.user?.uid ?? null,
+  })
+  const canEdit = !session.createdBy || !auth.user || session.createdBy === auth.user.uid
   const { state: match, dispatch: matchDispatch } = useMatch()
   const { history, saveSession, clearHistory } = useHistory(courtId)
   const { liveMatch } = useLiveMatch(courtId)
@@ -90,6 +94,7 @@ export default function Page() {
   }
 
   function handleStartFixture(fixtureId: string) {
+    if (!canEdit) return
     const fixture = session.fixtures.find(f => f.id === fixtureId)
     if (!fixture) return
     const tA = session.teams.find(t => t.id === fixture.teamAId)
@@ -253,6 +258,8 @@ export default function Page() {
             onSaveSession={handleSaveSession}
             match={effectiveMatch}
             onOpenScoreboard={() => setTab('score')}
+            canEdit={canEdit}
+            currentUid={auth.user?.uid ?? ''}
           />
         )}
         {tab === 'players' && (

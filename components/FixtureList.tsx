@@ -56,6 +56,8 @@ interface Props {
   teams: SessionTeam[]
   onStartFixture: (fixtureId: string) => void
   onResetFixture?: (fixtureId: string) => void
+  /** Non-creators see the fixtures but cannot tap to start or reset them. */
+  canEdit?: boolean
 }
 
 function teamIndex(teams: SessionTeam[], id: string): number {
@@ -66,7 +68,7 @@ function teamById(teams: SessionTeam[], id: string): SessionTeam {
   return teams.find(t => t.id === id) ?? { id, name: '—', players: [] }
 }
 
-export default function FixtureList({ fixtures, teams, onStartFixture, onResetFixture }: Props) {
+export default function FixtureList({ fixtures, teams, onStartFixture, onResetFixture, canEdit = true }: Props) {
   const done = fixtures.filter(f => f.status === 'done').length
   const total = fixtures.length
   const progressPct = total === 0 ? 0 : (done / total) * 100
@@ -129,7 +131,7 @@ export default function FixtureList({ fixtures, teams, onStartFixture, onResetFi
               const iB = teamIndex(teams, f.teamBId)
               const colorA = TEAM_COLORS[iA % TEAM_COLORS.length]
               const colorB = TEAM_COLORS[iB % TEAM_COLORS.length]
-              const canStart = f.status === 'pending'
+              const canStart = canEdit && f.status === 'pending'
               const isActive = f.status === 'active'
               const isDone = f.status === 'done'
               const isWinnerA = isDone && f.winnerId === f.teamAId

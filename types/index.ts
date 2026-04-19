@@ -40,6 +40,10 @@ export interface DaySession {
   fixtures: Fixture[]
   phase: SessionPhase
   activeFixtureId: string | null
+  /** uid of the member who started this tournament. Empty string for local-only sessions. */
+  createdBy: string
+  /** ms since epoch when the tournament was started. 0 for local-only sessions. */
+  createdAt: number
 }
 
 export type SessionAction =
@@ -50,7 +54,7 @@ export type SessionAction =
   | { type: 'SET_TEAM_SIZE'; payload: TeamSize }
   | { type: 'AUTO_SPLIT_TEAMS' }
   | { type: 'ASSIGN_PLAYER_TO_TEAM'; payload: { playerId: string; teamId: string } }
-  | { type: 'START_SESSION' }
+  | { type: 'START_SESSION'; payload?: { createdBy?: string } }
   | { type: 'START_FIXTURE'; payload: string }
   | { type: 'ABANDON_FIXTURE'; payload: string }
   | { type: 'RESET_FIXTURE'; payload: string }

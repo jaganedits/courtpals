@@ -42,6 +42,10 @@ interface Props {
   onSaveSession: () => void
   match?: MatchState
   onOpenScoreboard?: () => void
+  /** False when a tournament is in progress and the current user is not its creator. */
+  canEdit?: boolean
+  /** uid stamped as createdBy when the current user starts a tournament. */
+  currentUid?: string
 }
 
 export default function LeagueHub({
@@ -54,6 +58,8 @@ export default function LeagueHub({
   onSaveSession,
   match,
   onOpenScoreboard,
+  canEdit = true,
+  currentUid = '',
 }: Props) {
   const [view, setView] = useState<LeagueView>(() =>
     session.phase === 'setup'
@@ -73,6 +79,7 @@ export default function LeagueHub({
   }, [session.phase, view])
 
   function handleAutoSplit() {
+    if (!canEdit) return
     session.players.forEach(p => dispatch({ type: 'REMOVE_PLAYER', payload: p.id }))
     const todaysPlayers = allPlayers.filter(p => selectedIds.has(p.id))
     todaysPlayers.forEach(p => dispatch({ type: 'ADD_PLAYER', payload: p }))
@@ -81,7 +88,7 @@ export default function LeagueHub({
   }
 
   function handleStartSession() {
-    dispatch({ type: 'START_SESSION' })
+    dispatch({ type: 'START_SESSION', payload: { createdBy: currentUid } })
     setView('fixtures')
   }
 
@@ -92,6 +99,7 @@ export default function LeagueHub({
   }
 
   function handleReset() {
+    if (!canEdit) return
     dispatch({ type: 'RESET_SESSION' })
     setView('checkin')
   }
@@ -115,11 +123,11 @@ export default function LeagueHub({
 
   const playedCount = session.fixtures.filter(f => f.status !== 'pending').length
   const canReset =
-    session.phase !== 'setup' || session.teams.length > 0
+    canEdit && (session.phase !== 'setup' || session.teams.length > 0)
 
   const showSplit = !isSetupPhase && !isScheduled // only active / playoffs / done use the split view
   const saveButton =
-    session.phase === 'done' ? (
+    canEdit && session.phase === 'done' ? (
       <Button
         size="lg"
         onClick={onSaveSession}
@@ -214,16 +222,22 @@ export default function LeagueHub({
               </p>
             </div>
           </div>
-          <Button
-            size="lg"
-            onClick={() => dispatch({ type: 'BEGIN_PLAY' })}
-            className="h-auto justify-between gap-2 rounded-xl border-2 border-primary px-4 py-3 shadow-brut active:translate-x-0.5 active:translate-y-0.5 active:shadow-none lg:ml-auto"
-          >
-            <Play className="size-4" />
-            <span className="font-display text-sm font-extrabold uppercase tracking-[0.14em]">
-              Start playing
+          {canEdit ? (
+            <Button
+              size="lg"
+              onClick={() => dispatch({ type: 'BEGIN_PLAY' })}
+              className="h-auto justify-between gap-2 rounded-xl border-2 border-primary px-4 py-3 shadow-brut active:translate-x-0.5 active:translate-y-0.5 active:shadow-none lg:ml-auto"
+            >
+              <Play className="size-4" />
+              <span className="font-display text-sm font-extrabold uppercase tracking-[0.14em]">
+                Start playing
+              </span>
+            </Button>
+          ) : (
+            <span className="lg:ml-auto rounded-xl border border-border bg-background/60 px-3 py-2 font-display text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+              waiting for host to start
             </span>
-          </Button>
+          )}
         </div>
       )}
 
@@ -251,7 +265,26 @@ export default function LeagueHub({
         {resetDialog}
       </div>
 
-      {view === 'checkin' && (
+      {view === 'checkin' && !canEdit && (
+        <div className="px-4 py-10 lg:px-6">
+          <Empty className="border-2 border-dashed">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Trophy />
+              </EmptyMedia>
+              <EmptyTitle className="font-display font-bold">
+                Waiting for the host
+              </EmptyTitle>
+              <EmptyDescription>
+                Someone else is setting up today&apos;s tournament for this court. The
+                fixtures and standings will appear here as soon as they hit Start tournament.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        </div>
+      )}
+
+      {view === 'checkin' && canEdit && (
         <DaySetup
           allPlayers={allPlayers}
           selectedIds={selectedIds}
@@ -295,8 +328,9 @@ export default function LeagueHub({
         <FixtureList
           fixtures={session.fixtures}
           teams={session.teams}
-          onStartFixture={handleStartFixture}
-          onResetFixture={fid => dispatch({ type: 'RESET_FIXTURE', payload: fid })}
+          onStartFixture={canEdit ? handleStartFixture : () => {}}
+          onResetFixture={canEdit ? fid => dispatch({ type: 'RESET_FIXTURE', payload: fid }) : undefined}
+          canEdit={canEdit}
         />
       )}
 
@@ -307,8 +341,9 @@ export default function LeagueHub({
             <FixtureList
               fixtures={session.fixtures}
               teams={session.teams}
-              onStartFixture={handleStartFixture}
-              onResetFixture={fid => dispatch({ type: 'RESET_FIXTURE', payload: fid })}
+              onStartFixture={canEdit ? handleStartFixture : () => {}}
+              onResetFixture={canEdit ? fid => dispatch({ type: 'RESET_FIXTURE', payload: fid }) : undefined}
+              canEdit={canEdit}
             />
           )}
           {view === 'standings' && (
@@ -334,8 +369,9 @@ export default function LeagueHub({
             <FixtureList
               fixtures={session.fixtures}
               teams={session.teams}
-              onStartFixture={handleStartFixture}
-              onResetFixture={fid => dispatch({ type: 'RESET_FIXTURE', payload: fid })}
+              onStartFixture={canEdit ? handleStartFixture : () => {}}
+              onResetFixture={canEdit ? fid => dispatch({ type: 'RESET_FIXTURE', payload: fid }) : undefined}
+              canEdit={canEdit}
             />
             <aside className="flex flex-col gap-4">
               <Standings teams={session.teams} fixtures={session.fixtures} />

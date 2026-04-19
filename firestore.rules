@@ -87,6 +87,22 @@ service cloud.firestore {
         allow read, write: if isMember(courtId);
       }
 
+      // ── Active tournament (one doc per court at id 'current') ────────────
+      // Any court member can read. Create is allowed only when no doc exists
+      // (Firestore's built-in behaviour for the create rule) and the caller
+      // stamps themselves as createdBy. Updates + deletes are gated on the
+      // createdBy field, so only the original starter of the tournament can
+      // progress or end it.
+      match /tournaments/{docId} {
+        allow read: if isMember(courtId);
+        allow create: if isMember(courtId)
+          && request.resource.data.createdBy == request.auth.uid;
+        allow update: if isMember(courtId)
+          && resource.data.createdBy == request.auth.uid;
+        allow delete: if isMember(courtId)
+          && resource.data.createdBy == request.auth.uid;
+      }
+
       // ── Live scoreboard (public read for spectators, members write) ───────
       match /liveMatch/{docId} {
         allow read: if true;

@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useReducer } from 'react'
+import { useEffect, useReducer, useRef } from 'react'
+import { deleteDoc, doc, onSnapshot, setDoc } from 'firebase/firestore'
+import { firestore } from '@/lib/firebase'
 import type { DaySession, SessionAction, SessionPlayer, SessionTeam, Fixture, Round, TeamSize } from '@/types'
 
 const STORAGE_KEY = 'courtpals_session'
@@ -186,6 +188,8 @@ export const initialSession: DaySession = {
   fixtures: [],
   phase: 'setup',
   activeFixtureId: null,
+  createdBy: '',
+  createdAt: 0,
 }
 
 export function sessionReducer(state: DaySession, action: SessionAction): DaySession {
@@ -248,6 +252,8 @@ export function sessionReducer(state: DaySession, action: SessionAction): DaySes
         date: state.date || startOfDay(Date.now()),
         fixtures: generateRoundRobin(state.teams),
         phase: isFutureDay(state.date || Date.now()) ? 'scheduled' : 'active',
+        createdBy: action.payload?.createdBy ?? state.createdBy ?? '',
+        createdAt: state.createdAt || Date.now(),
       }
 
     case 'START_FIXTURE':
@@ -397,17 +403,28 @@ function loadPersisted(): DaySession | null {
   }
 }
 
-export function useSession() {
+interface UseSessionOptions {
+  /** Court id when the session should sync to Firestore. */
+  courtId?: string | null
+  /** Firebase uid of the signed-in user — needed to authorise writes as creator. */
+  uid?: string | null
+}
+
+export function useSession(opts: UseSessionOptions = {}) {
+  const { courtId, uid } = opts
   const [state, dispatch] = useReducer(sessionReducer, initialSession)
 
-  // Hydrate persisted session on mount.
+  // ── Local-only mode: hydrate from localStorage on mount. ─────────────────
   useEffect(() => {
+    if (courtId) return
     const persisted = loadPersisted()
     if (persisted) dispatch({ type: 'HYDRATE_SESSION', payload: persisted })
-  }, [])
+  }, [courtId])
 
-  // Persist every state change (skip the pristine sentinel).
+  // Persist every state change to localStorage ONLY when we aren't syncing to
+  // Firestore — otherwise the remote doc is the source of truth.
   useEffect(() => {
+    if (courtId) return
     if (typeof window === 'undefined') return
     if (state.id === initialSession.id) {
       localStorage.removeItem(STORAGE_KEY)
@@ -418,7 +435,57 @@ export function useSession() {
     } catch {
       // quota / serialization — silent fail is fine for this non-critical cache.
     }
-  }, [state])
+  }, [state, courtId])
+
+  // ── Firestore mode: subscribe to /courts/{courtId}/tournaments/current. ──
+  useEffect(() => {
+    if (!courtId) return
+    const db = firestore()
+    if (!db) return
+    const ref = doc(db, 'courts', courtId, 'tournaments', 'current')
+    const unsub = onSnapshot(
+      ref,
+      snap => {
+        if (!snap.exists()) {
+          // Tournament was deleted (or never started) — reset to blank.
+          dispatch({ type: 'RESET_SESSION' })
+          return
+        }
+        dispatch({ type: 'HYDRATE_SESSION', payload: snap.data() as DaySession })
+      },
+      () => {
+        // Ignore permission errors silently; members view what they can.
+      },
+    )
+    return unsub
+  }, [courtId])
+
+  // Creator-only: mirror local state to Firestore on every change. Non-creators
+  // receive their state exclusively via the snapshot listener above.
+  const lastIdRef = useRef<string>(state.id)
+  useEffect(() => {
+    if (!courtId || !uid) return
+    const db = firestore()
+    if (!db) return
+    const ref = doc(db, 'courts', courtId, 'tournaments', 'current')
+    const amCreator = state.createdBy === uid
+    const isPristine = state.id === initialSession.id
+
+    if (isPristine) {
+      // Session was reset locally. If I was the previous creator of the remote
+      // tournament, tear it down so other members see it end. (Non-creators
+      // cannot write to that doc, and the rules will just reject.)
+      if (lastIdRef.current !== initialSession.id) {
+        void deleteDoc(ref)
+      }
+      lastIdRef.current = state.id
+      return
+    }
+
+    lastIdRef.current = state.id
+    if (!amCreator) return
+    void setDoc(ref, state)
+  }, [state, courtId, uid])
 
   return { state, dispatch }
 }
