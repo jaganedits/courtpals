@@ -20,12 +20,33 @@ function makeFixture(teamAId: string, teamBId: string, round: Round): Fixture {
   }
 }
 
+/**
+ * Circle-method round-robin: every team plays exactly once per round, so when
+ * matches are flattened onto a single court they alternate teams instead of
+ * running one team back-to-back through every opponent.
+ *
+ * For N teams (N even): fix team 0, rotate the rest around it over N-1 rounds.
+ * For N odd: add a phantom "bye" slot that skips one match per round.
+ */
 function generateRoundRobin(teams: SessionTeam[]): Fixture[] {
   const fixtures: Fixture[] = []
-  for (let i = 0; i < teams.length; i++) {
-    for (let j = i + 1; j < teams.length; j++) {
-      fixtures.push(makeFixture(teams[i].id, teams[j].id, 'rr'))
+  if (teams.length < 2) return fixtures
+
+  const slots: (string | null)[] = teams.map(t => t.id)
+  if (slots.length % 2 === 1) slots.push(null)
+  const n = slots.length
+  const rounds = n - 1
+
+  for (let r = 0; r < rounds; r++) {
+    for (let i = 0; i < n / 2; i++) {
+      const a = slots[i]
+      const b = slots[n - 1 - i]
+      if (a && b) fixtures.push(makeFixture(a, b, 'rr'))
     }
+    // rotate: pin slot 0, move last to front of the rotating tail
+    const fixed = slots[0]
+    const rotated = [slots[n - 1], ...slots.slice(1, n - 1)]
+    slots.splice(0, n, fixed, ...rotated)
   }
   return fixtures
 }

@@ -88,6 +88,40 @@ describe('sessionReducer', () => {
       expect(s.fixtures).toHaveLength(3)
     })
 
+    it('no team plays three consecutive fixtures (circle-method rotation)', () => {
+      let s = eightPlayers.reduce(
+        (acc, p) => sessionReducer(acc, { type: 'ADD_PLAYER', payload: p }),
+        initialSession,
+      )
+      s = sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })
+      s = sessionReducer(s, { type: 'START_SESSION' })
+      for (let i = 2; i < s.fixtures.length; i++) {
+        const a = s.fixtures[i - 2]
+        const b = s.fixtures[i - 1]
+        const c = s.fixtures[i]
+        const common = [a.teamAId, a.teamBId].filter(
+          id => [b.teamAId, b.teamBId].includes(id) && [c.teamAId, c.teamBId].includes(id),
+        )
+        expect(common).toEqual([])
+      }
+    })
+
+    it('every RR pair appears exactly once', () => {
+      let s = eightPlayers.reduce(
+        (acc, p) => sessionReducer(acc, { type: 'ADD_PLAYER', payload: p }),
+        initialSession,
+      )
+      s = sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })
+      s = sessionReducer(s, { type: 'START_SESSION' })
+      const seen = new Set<string>()
+      for (const f of s.fixtures) {
+        const key = [f.teamAId, f.teamBId].sort().join('|')
+        expect(seen.has(key)).toBe(false)
+        seen.add(key)
+      }
+      expect(seen.size).toBe(s.fixtures.length)
+    })
+
     it('all fixtures start as pending', () => {
       let s = eightPlayers.reduce((acc, p) => sessionReducer(acc, { type: 'ADD_PLAYER', payload: p }), initialSession)
       s = sessionReducer(s, { type: 'AUTO_SPLIT_TEAMS' })
