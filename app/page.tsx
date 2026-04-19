@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Trophy, Users, BadgeCheck, Calendar } from 'lucide-react'
+import AuthGate from '@/components/AuthGate'
 import TabNav, { type Tab } from '@/components/TabNav'
 import LeagueHub from '@/components/LeagueHub'
 import PlayerRegistry from '@/components/PlayerRegistry'
@@ -113,6 +114,7 @@ export default function Page() {
   }
 
   return (
+    <AuthGate>
     <main className="relative flex min-h-screen flex-col pb-[calc(env(safe-area-inset-bottom)+72px)] lg:pb-0">
       {/* Top app bar */}
       <header className="sticky top-0 z-30 border-b border-[var(--color-line)]/60 bg-[var(--color-bg)]/80 backdrop-blur-md">
@@ -238,5 +240,6 @@ export default function Page() {
 
       <TabNav active={tab} scoreEnabled={scoreTabEnabled} onChange={setTab} />
     </main>
+    </AuthGate>
   )
 }
