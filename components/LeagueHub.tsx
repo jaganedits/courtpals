@@ -297,6 +297,7 @@ export default function LeagueHub({
               fixtures={session.fixtures}
               teams={session.teams}
               onStartFixture={handleStartFixture}
+              onResetFixture={fid => dispatch({ type: 'RESET_FIXTURE', payload: fid })}
             />
           )}
           {view === 'standings' && (
@@ -323,6 +324,7 @@ export default function LeagueHub({
               fixtures={session.fixtures}
               teams={session.teams}
               onStartFixture={handleStartFixture}
+              onResetFixture={fid => dispatch({ type: 'RESET_FIXTURE', payload: fid })}
             />
             <aside className="flex flex-col gap-4">
               <Standings teams={session.teams} fixtures={session.fixtures} />
