@@ -46,6 +46,10 @@ interface Props {
   canEdit?: boolean
   /** uid stamped as createdBy when the current user starts a tournament. */
   currentUid?: string
+  /** True once the Firestore tournament subscription has settled (or always in local mode). */
+  sessionReady?: boolean
+  /** Non-null when the subscription errored — usually a rules publish issue. */
+  sessionError?: string | null
 }
 
 export default function LeagueHub({
@@ -60,6 +64,8 @@ export default function LeagueHub({
   onOpenScoreboard,
   canEdit = true,
   currentUid = '',
+  sessionReady = true,
+  sessionError = null,
 }: Props) {
   const [view, setView] = useState<LeagueView>(() =>
     session.phase === 'setup'
@@ -195,6 +201,32 @@ export default function LeagueHub({
         day: 'numeric',
       })
     : ''
+
+  if (!sessionReady) {
+    return (
+      <div className="flex flex-col items-center gap-2 px-4 py-16 text-center">
+        <span className="size-8 animate-spin rounded-full border-2 border-primary/60 border-t-transparent" />
+        <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          syncing tournament…
+        </p>
+      </div>
+    )
+  }
+
+  if (sessionError) {
+    return (
+      <div className="mx-4 mt-6 rounded-2xl border-2 border-destructive/40 bg-destructive/10 p-4 lg:mx-6">
+        <p className="font-display text-xs font-bold uppercase tracking-[0.16em] text-destructive">
+          tournament sync blocked
+        </p>
+        <p className="mt-1 text-sm text-foreground">
+          Firestore rejected the /tournaments read. Ask the admin to republish the
+          latest rules to the <code className="rounded bg-muted px-1">courtpaldev</code> database.
+        </p>
+        <p className="mt-2 text-[11px] text-muted-foreground">Details: {sessionError}</p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col">

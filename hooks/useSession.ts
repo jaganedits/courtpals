@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useReducer, useRef } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import { deleteDoc, doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { firestore } from '@/lib/firebase'
 import type { DaySession, SessionAction, SessionPlayer, SessionTeam, Fixture, Round, TeamSize } from '@/types'
@@ -413,6 +413,14 @@ interface UseSessionOptions {
 export function useSession(opts: UseSessionOptions = {}) {
   const { courtId, uid } = opts
   const [state, dispatch] = useReducer(sessionReducer, initialSession)
+  /** True once the Firestore subscription has returned at least one snapshot
+   *  (or immediately when running in local-only mode). Lets UI avoid
+   *  flashing the editable setup view while the remote tournament is still
+   *  being fetched. */
+  const [ready, setReady] = useState(!courtId)
+  /** Last error from the Firestore subscription. Surfaces rule / config issues
+   *  that would otherwise be swallowed. */
+  const [error, setError] = useState<string | null>(null)
 
   // ── Local-only mode: hydrate from localStorage on mount. ─────────────────
   useEffect(() => {
@@ -439,9 +447,18 @@ export function useSession(opts: UseSessionOptions = {}) {
 
   // ── Firestore mode: subscribe to /courts/{courtId}/tournaments/current. ──
   useEffect(() => {
-    if (!courtId) return
+    if (!courtId) {
+      setReady(true)
+      setError(null)
+      return
+    }
+    setReady(false)
+    setError(null)
     const db = firestore()
-    if (!db) return
+    if (!db) {
+      setReady(true)
+      return
+    }
     const ref = doc(db, 'courts', courtId, 'tournaments', 'current')
     const unsub = onSnapshot(
       ref,
@@ -449,12 +466,18 @@ export function useSession(opts: UseSessionOptions = {}) {
         if (!snap.exists()) {
           // Tournament was deleted (or never started) — reset to blank.
           dispatch({ type: 'RESET_SESSION' })
-          return
+        } else {
+          dispatch({ type: 'HYDRATE_SESSION', payload: snap.data() as DaySession })
         }
-        dispatch({ type: 'HYDRATE_SESSION', payload: snap.data() as DaySession })
+        setReady(true)
+        setError(null)
       },
-      () => {
-        // Ignore permission errors silently; members view what they can.
+      err => {
+        // Surface rule / config errors so non-creators aren't silently stuck
+        // on the editable setup screen when reads of /tournaments fail.
+        console.warn('[courtpals] tournament snapshot error:', err.message)
+        setError(err.message)
+        setReady(true)
       },
     )
     return unsub
@@ -487,5 +510,5 @@ export function useSession(opts: UseSessionOptions = {}) {
     void setDoc(ref, state)
   }, [state, courtId, uid])
 
-  return { state, dispatch }
+  return { state, dispatch, ready, error }
 }
