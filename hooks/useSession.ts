@@ -456,6 +456,12 @@ export function useSession(opts: UseSessionOptions = {}) {
     }
   }, [state, courtId])
 
+  // Flag set by the Firestore subscription immediately before dispatching a
+  // hydrate. The write effect reads-and-resets it so remote-driven state
+  // changes don't echo back as another setDoc (which would re-trigger the
+  // snapshot and loop indefinitely).
+  const skipNextWriteRef = useRef(false)
+
   // ── Firestore mode: subscribe to /courts/{courtId}/tournaments/current. ──
   useEffect(() => {
     if (!courtId) {
@@ -474,6 +480,7 @@ export function useSession(opts: UseSessionOptions = {}) {
     const unsub = onSnapshot(
       ref,
       snap => {
+        skipNextWriteRef.current = true
         if (!snap.exists()) {
           // Tournament was deleted (or never started) — reset to blank.
           dispatch({ type: 'RESET_SESSION' })
@@ -500,6 +507,14 @@ export function useSession(opts: UseSessionOptions = {}) {
   const lastIdRef = useRef<string>(state.id)
   useEffect(() => {
     if (!courtId || !uid) return
+    // Skip the write that would immediately follow a remote hydration —
+    // otherwise we'd echo the snapshot we just received back to Firestore
+    // and loop forever.
+    if (skipNextWriteRef.current) {
+      skipNextWriteRef.current = false
+      lastIdRef.current = state.id
+      return
+    }
     const db = firestore()
     if (!db) return
     const ref = doc(db, 'courts', courtId, 'tournaments', 'current')
