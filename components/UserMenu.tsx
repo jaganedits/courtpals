@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { LogIn, LogOut, Pencil, Trophy, Calendar, Copy, Check } from 'lucide-react'
+import { LogIn, LogOut, Pencil, Trophy, Calendar, Copy, Check, DoorOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -16,6 +16,17 @@ import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import { isFirebaseConfigured } from '@/lib/firebase'
 import { useAuth } from '@/hooks/useAuth'
@@ -672,19 +683,60 @@ function FirebaseProfileDialogContent({
       )}
 
       <DialogFooter className="sm:justify-between">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={async () => {
-            await auth.signOut()
-            onLocalSignOut()
-            onClose()
-          }}
-          className={cn('gap-2 text-destructive hover:text-destructive')}
-        >
-          <LogOut className="size-4" />
-          Sign out
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              await auth.signOut()
+              onLocalSignOut()
+              onClose()
+            }}
+            className={cn('gap-2 text-destructive hover:text-destructive')}
+          >
+            <LogOut className="size-4" />
+            Sign out
+          </Button>
+
+          {court.court && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <DoorOpen className="size-4" />
+                  Leave court
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="font-display">
+                    Leave {court.court.name}?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {court.isAdmin
+                      ? 'You\u2019re the admin of this court. Leaving will not delete the court, but you won\u2019t see its roster or history until you re-join. Other members remain unaffected.'
+                      : 'You\u2019ll be disconnected from this court. You can rejoin later with the invite code, or pick a different court.'}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => {
+                      await court.leaveCourt()
+                      onClose()
+                    }}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Leave court
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
         <Button variant="outline" size="sm" onClick={onClose}>
           Close
         </Button>
