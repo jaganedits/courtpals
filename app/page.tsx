@@ -1,6 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore'
+import { firestore } from '@/lib/firebase'
 import { Trophy, Users, BadgeCheck, Calendar } from 'lucide-react'
 import AuthGate from '@/components/AuthGate'
 import TabNav, { type Tab } from '@/components/TabNav'
@@ -19,7 +21,8 @@ import { useHistory } from '@/hooks/useHistory'
 import { useCurrentPlayer } from '@/hooks/useCurrentPlayer'
 import { useAuth } from '@/hooks/useAuth'
 import { useCourt } from '@/hooks/useCourt'
-import type { SavedSession } from '@/types'
+import { useLiveMatch } from '@/hooks/useLiveMatch'
+import type { MatchState, SavedSession } from '@/types'
 
 const DESKTOP_TABS: { id: Tab; label: string; Icon: typeof Trophy }[] = [
   { id: 'league', label: 'League', Icon: Trophy },
@@ -43,6 +46,36 @@ export default function Page() {
   const { state: session, dispatch: sessionDispatch } = useSession()
   const { state: match, dispatch: matchDispatch } = useMatch()
   const { history, saveSession, clearHistory } = useHistory(courtId)
+  const { liveMatch } = useLiveMatch(courtId)
+
+  // Effective match state: if THIS tab is scoring, use the local reducer
+  // (highest-fidelity). Otherwise fall back to the shared /liveMatch doc so
+  // spectators watching on another device see the same score.
+  const effectiveMatch: MatchState = match.phase !== 'idle' ? match : liveMatch ?? match
+
+  // Scorer → Firestore sync. Whenever the local match state changes and we
+  // have a court, push a compact snapshot to /courts/{courtId}/liveMatch/current
+  // so every other member subscribed via useLiveMatch gets the live update.
+  const lastPhaseRef = useRef<MatchState['phase']>('idle')
+  useEffect(() => {
+    if (!courtId || !auth.user) return
+    const db = firestore()
+    if (!db) return
+    const ref = doc(db, 'courts', courtId, 'liveMatch', 'current')
+    if (match.phase !== 'idle') {
+      const { events: _events, ...rest } = match
+      void setDoc(ref, {
+        ...rest,
+        scorerUid: auth.user.uid,
+        updatedAt: serverTimestamp(),
+      })
+    } else if (lastPhaseRef.current !== 'idle') {
+      // Local match just went from playing/finished to idle (reset / saved);
+      // clear the shared doc so spectators stop seeing a stale scoreboard.
+      void deleteDoc(ref)
+    }
+    lastPhaseRef.current = match.phase
+  }, [match, courtId, auth.user])
 
   const activeFixture = session.fixtures.find(f => f.id === session.activeFixtureId) ?? null
   const scoreTabEnabled = match.phase !== 'idle'
@@ -218,7 +251,7 @@ export default function Page() {
             dispatch={sessionDispatch}
             onStartFixture={handleStartFixture}
             onSaveSession={handleSaveSession}
-            match={match}
+            match={effectiveMatch}
             onOpenScoreboard={() => setTab('score')}
           />
         )}
